@@ -44,7 +44,7 @@ Los 7 avisos son todos `name: identical text in two languages` y son **correctos
 |---|---|---|
 | `office_obispo_auxiliar` | Obispo auxiliar | CIC cc. 403-411 |
 | `office_obispo_coadjutor` | Obispo coadjutor | CIC cc. 403 y 409 |
-| `office_obispo_emperito` | Obispo emérito | CIC cc. 401-402 (el CIC dice «obispo dimisionario») |
+| `office_obispo_emerito` | Obispo emérito | CIC cc. 401-402 (el CIC dice «obispo dimisionario») |
 | `office_administrador_apostolico` | Administrador apostólico | CIC cc. 368 y 381 §2 |
 | `office_vicario_general` | Vicario general | CIC cc. 475-481 |
 | `office_vicario_episcopal` | Vicario episcopal | CIC cc. 476-481 |
@@ -94,17 +94,28 @@ Los 7 avisos son todos `name: identical text in two languages` y son **correctos
 
 ## Orden (`after`)
 
-La cadena respeta la jerarquía: los obispos auxiliar/coadjutor/emérito van tras `office_obispo`; los vicarios y la curia tras ellos; los cargos de la Curia Romana (secretario de Estado, prefecto, camarlengo, penitenciario) van en ese orden; `office_monsenor` va tras `office_capellan`; `office_arzobispo_mayor` tras `office_monsenor`; `office_catequista_instituido` tras `office_misionero_laico`; `office_ministro_extraordinario_comunion` tras `office_acolito`.
+La cadena respeta la jerarquía: los obispos auxiliar/coadjutor/emérito van tras `office_obispo`; los vicarios y la curia tras ellos; los cargos de la Curia Romana (secretario de Estado, prefecto, camarlengo, penitenciario) van en ese orden. En el clero, el orden quedó así tras la corrección de la revisión (se rompió el ciclo que formaban los cinco cargos): arzobispo mayor tras `office_patriarca`, diácono permanente tras `office_diacono`, rector de seminario tras `office_parroco`, capellán tras `office_vicario_parroquial` y monseñor tras `office_canonigo`. `office_catequista_instituido` va tras `office_misionero_laico`; `office_ministro_extraordinario_comunion` tras `office_acolito`.
 
 ## Decisiones y avisos
 
-- **`office_obispo_emperito`**: el CIC de 1983 usa el tecnicismo «obispo dimisionario» (c. 402 §1), no «emérito». La ficha usa el nombre común y lo aclara en la descripción.
+- **`office_obispo_emerito`**: el CIC de 1983 usa el tecnicismo «obispo dimisionario» (c. 402 §1), no «emérito». La ficha usa el nombre común y lo aclara en la descripción. El id se corrigió de `office_obispo_emperito` a `office_obispo_emerito` en la revisión.
 - **`office_prior`**: no es una figura del derecho universal; el CIC y el CCEO regulan «superiores mayores» y «provincia». Se cita el derecho propio del instituto como fuente de la denominación.
 - **`office_viuda_consagrada`**: el CIC de 1983 **no** la menciona (c. 604 solo habla del orden de las vírgenes) y el *Ordo consecrationis virginum* de 1970 no la incluye. La liturgia distingue la *consecratio virginum* de la *benedictio viduarum*, rito propio atestado en los pontificios. La ficha lo explica con precisión en vez de equipararla a la virgen consagrada.
 - **`office_monsenor`**: se explica que es un título honorífico, no un cargo ni un sacramento.
 - **`office_ordinario_militar`**: el CIC de 1983 no contempla el ordinariato militar; su base es *Spirituali militum curae* (1986). Se indica que es una circunscripción de carácter personal, no una diócesis.
 - **No verificable:** la fecha exacta del establecimiento de la *benedictio viduarum* en el Pontifical Romano no se ha podido confirmar en una fuente primaria oficial; por eso no se da ninguna fecha y se describe solo la distinción entre ambos ritos.
 
+## Correcciones de la revisión aplicadas
+
+La revisión (`docs/tasks/T-017-REVIEW.md`) cerró T-017 con 0 errores y aplicó al integrar:
+
+- **Id:** `office_obispo_emperito` → `office_obispo_emerito` (y su `after`).
+- **Clero:** se rompió el ciclo de `after` y los cinco cargos quedaron: arzobispo mayor tras `office_patriarca`, diácono permanente tras `office_diacono`, rector tras `office_parroco`, capellán tras `office_vicario_parroquial`, monseñor tras `office_canonigo`.
+- **Camarlengo:** se retiró la frase sobre el nombramiento del vicecamarlengo y los tres cardenales asistentes (proceden de *Universi Dominici Gregis*, no de *Praedicate Evangelium*).
+- **Ortografía:** «dotársele» y «confiarse».
+
+El `merge` de `origin/CatholicGPT` incorporó esas correcciones; el validador sigue en **34 entries · 0 errors · 7 warnings** (los 7 avisos son nombres idénticos en dos idiomas, aceptados por la revisión).
+
 ## Frecuencia de push
 
-`fork/ext/T-017`: `60966a2` (1-10), `19562da` (11-20), `eaaf4e3` (21-25), `d06c5d0` (26-34).
+`fork/ext/T-017`: `60966a2` (1-10), `19562da` (11-20), `eaaf4e3` (21-25), `d06c5d0` (26-34), `4e66e34` (REPORT), más el `merge` de `origin/CatholicGPT` con las correcciones de la revisión.
