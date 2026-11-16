@@ -55,7 +55,7 @@ retablo que la aloja; esos casos quedan señalados en «Observaciones».
 | `nuestra_senora_de_la_candelaria.png` | Nuestra Señora de la Candelaria | Wikimedia Commons: [La Virgen de Candelaria, en Tenerife, Patrona de las Islas Canarias, España.JPG](https://commons.wikimedia.org/wiki/File:La_Virgen_de_Candelaria,_en_Tenerife,_Patrona_de_las_Islas_Canarias,_España.JPG) | CC BY-SA 4.0 | CARLOS TEIXIDOR CADENAS |
 | `nuestra_senora_de_la_merced.png` | Nuestra Señora de la Merced (Redentora de Cautivos) | Wikimedia Commons: [Virgen de la Merced (Convento de la Merced, Sevilla).jpg](https://commons.wikimedia.org/wiki/File:Virgen_de_la_Merced_(Convento_de_la_Merced,_Sevilla).jpg) | Public domain | anónimo |
 | `nuestra_senora_de_los_milagros_de_caacupe.png` | Nuestra Señora de los Milagros de Caacupé | Wikimedia Commons: [Virgen de Caacupé tallada en palo santo.JPG](https://commons.wikimedia.org/wiki/File:Virgen_de_Caacupé_tallada_en_palo_santo.JPG) | CC BY-SA 3.0 | Mateuverte |
-| `nuestra_senora_de_la_altagracia.png` | Nuestra Señora de la Altagracia | Wikimedia Commons: [Virgen de Altagracia 2014 23 (12586356955).jpg](https://commons.wikimedia.org/wiki/File:Virgen_de_Altagracia_2014_23_(12586356955).jpg) | CC BY-SA 2.0 | Iglesia en Valladolid from Valladolid, España |
+| `nuestra_senora_de_la_altagracia.png` | Nuestra Señora de la Altagracia | Wikimedia Commons: [Virgen de La Altagracia - Victor Grimaldi.jpg](https://commons.wikimedia.org/wiki/File:Virgen_de_La_Altagracia_-_Victor_Grimaldi.jpg) | CC BY-SA 4.0 | Rita Grimaldi |
 | `nuestra_senora_del_perpetuo_socorro.png` | Nuestra Señora del Perpetuo Socorro | Wikimedia Commons: [Our Lady of Perpetual Help icon, Christ the King Catholic Church, Auckland.jpg](https://commons.wikimedia.org/wiki/File:Our_Lady_of_Perpetual_Help_icon,_Christ_the_King_Catholic_Church,_Auckland.jpg) | CC BY 4.0 | Bjankuloski06 |
 | `nuestra_senora_de_akita.png` | Nuestra Señora de Akita | Wikimedia Commons: [Virgin Mary of Akita Japan.jpg](https://commons.wikimedia.org/wiki/File:Virgin_Mary_of_Akita_Japan.jpg) | CC BY-SA 4.0 | SICDAMNOME |
 | `nuestra_senora_de_kibeho.png` | Nuestra Señora de Kibeho (Madre del Verbo) | Wikimedia Commons: [Ishusho ya Bikira Mariya Nyina wa Jambo.jpg](https://commons.wikimedia.org/wiki/File:Ishusho_ya_Bikira_Mariya_Nyina_wa_Jambo.jpg) | CC BY-SA 4.0 | Celestin KANUMA |
@@ -84,11 +84,11 @@ retablo que la aloja; esos casos quedan señalados en «Observaciones».
 | `cristo_de_la_humildad_y_paciencia.png` | Cristo de la Humildad y Paciencia (Cristo Humilde) | Wikimedia Commons: [CRISTO DE LA HUMILDAD Y PACIENCIA, CHICLANA.jpg](https://commons.wikimedia.org/wiki/File:CRISTO_DE_LA_HUMILDAD_Y_PACIENCIA,_CHICLANA.jpg) | CC BY-SA 4.0 | PEPE GADEIRAS |
 | `la_preciosisima_sangre_de_cristo.png` | La Preciosísima Sangre de Cristo | Wikimedia Commons: [Santo Cristo de la Preciosa Sangre (Valladolid).jpg](https://commons.wikimedia.org/wiki/File:Santo_Cristo_de_la_Preciosa_Sangre_(Valladolid).jpg) | CC BY-SA 4.0 | José Luis Filpo Cabana |
 | `el_santisimo_sacramento_y_la_adoracion_eucaristica.png` | El Santísimo Sacramento y la adoración eucarística | Wikimedia Commons: [Cálice, Patena e Colherinha.jpg](https://commons.wikimedia.org/wiki/File:Cálice,_Patena_e_Colherinha.jpg) | CC BY-SA 4.0 | Wilfredor |
-| `las_cinco_llagas_de_cristo.png` | Las Cinco Llagas de Cristo | Wikimedia Commons: [Cristo de las Cinco Llagas.jpg](https://commons.wikimedia.org/wiki/File:Cristo_de_las_Cinco_Llagas.jpg) | CC BY-SA 4.0 | CarlosVdeHabsburgo |
+| `las_cinco_llagas_de_cristo.png` | Las Cinco Llagas de Cristo | Wikimedia Commons: [Santísimo Cristo de las Cinco Llagas.jpg](https://commons.wikimedia.org/wiki/File:Santísimo_Cristo_de_las_Cinco_Llagas.jpg) | CC BY-SA 4.0 | Mflito |
 | `el_via_crucis.png` | El Vía Crucis | Wikimedia Commons: [Stations of the Cross, 5, Saint-Jean-Baptiste au Beguinage, Brussels.jpg](https://commons.wikimedia.org/wiki/File:Stations_of_the_Cross,_5,_Saint-Jean-Baptiste_au_Beguinage,_Brussels.jpg) | Public domain | Yann (talk) |
 | `el_santisimo_nombre_de_jesus.png` | El Santísimo Nombre de Jesús | Wikimedia Commons: [IHS with cross.jpg](https://commons.wikimedia.org/wiki/File:IHS_with_cross.jpg) | CC0 | user:AnonMoos (changes by Rabanus Flavus |
 | `el_senor_del_gran_poder.png` | El Señor del Gran Poder | Wikimedia Commons: [Señor Del Gran Poder.jpg](https://commons.wikimedia.org/wiki/File:Señor_Del_Gran_Poder.jpg) | CC0 | Cacope |
-| `el_senor_de_chalma.png` | El Señor de Chalma | Wikimedia Commons: [Retablo principal del Santuario del Señor de Chalma - 1.jpg](https://commons.wikimedia.org/wiki/File:Retablo_principal_del_Santuario_del_Señor_de_Chalma_-_1.jpg) | CC BY-SA 4.0 | ProtoplasmaKid |
+| `el_senor_de_chalma.png` | El Señor de Chalma | Wikimedia Commons: [Verdadera imagen del Señor de Chalma LCCN99615958.jpg](https://commons.wikimedia.org/wiki/File:Verdadera_imagen_del_Señor_de_Chalma_LCCN99615958.jpg) | Public domain | Antonio Vanegas Arroyo (Firm), publisher; Posada, José Guadalupe, 1852-1913, artist |
 | `el_senor_de_los_temblores.png` | El Señor de los Temblores (Taytacha) | Wikimedia Commons: [Anónimo cuzqueño - Señor de los Temblores (Convento de Santa Catalina, Cuzco).jpg](https://commons.wikimedia.org/wiki/File:Anónimo_cuzqueño_-_Señor_de_los_Temblores_(Convento_de_Santa_Catalina,_Cuzco).jpg) | CC BY 4.0 | PPazo1995 |
 | `el_santo_nino_de_cebu.png` | El Santo Niño de Cebú | Wikimedia Commons: [Image of the Santo Niño de Cebu.jpg](https://commons.wikimedia.org/wiki/File:Image_of_the_Santo_Niño_de_Cebu.jpg) | CC BY-SA 4.0 | SantoNinoDeCebu |
 | `el_senor_bom_jesus_de_matosinhos.png` | El Señor Bom Jesus de Matosinhos | Wikimedia Commons: [Santuário do Bom Jesus de Matosinhos - Congonhas - 20121029101721.jpg](https://commons.wikimedia.org/wiki/File:Santuário_do_Bom_Jesus_de_Matosinhos_-_Congonhas_-_20121029101721.jpg) | CC BY-SA 4.0 | Rkieferbaum |
@@ -113,18 +113,35 @@ imagen genérica (un Cristo o una Virgen cualquiera) para no inducir a error.
 
 ## Observaciones
 
-- `el_cristo_de_los_milagros.png` (Cristo de los Milagros de Chile) es la única imagen
-  disponible en Commons para esa advocación; muestra el conjunto del santuario y la cruz,
-  no la talla aislada.
-- `el_santo_cristo_de_la_victoria.png` es la capilla del Santísimo Cristo de la Victoria
-  en la catedral de Málaga, no la talla aislada.
-- `el_senor_de_chalma.png` es el retablo mayor del santuario, que contiene la imagen.
-- `nuestra_senora_de_lujan.png` es un mural de azulejos de la Virgen de Luján.
-- `nuestra_senora_del_rosario.png` es la pintura de la Virgen del Rosario protegiendo las
-  naves españolas en la batalla de Lepanto.
-- `el_santisimo_sacramento_y_la_adoracion_eucaristica.png` es una custodia (objeto
-  litúrgico), al no existir una imagen única del Santísimo Sacramento.
+Segunda pasada visual (hoja de contactos, 2026-11-16): se corrigieron las imágenes que eran
+edificios, procesiones o paisajes. Estas son las que quedan con la imagen del santuario, el
+retablo o una representación, porque Commons no tiene la talla o el cuadro aislado:
+
+- `el_cristo_de_los_milagros.png` (Cristo de los Milagros de Chile) muestra el conjunto del
+  santuario y la cruz, no la talla aislada.
+- `el_santo_cristo_de_la_victoria.png` es la capilla del Santísimo Cristo de la Victoria en la
+  catedral de Málaga, no la talla aislada.
+- `nuestra_senora_de_lujan.png` es un mural de azulejos de la Virgen de Luján, no la talla de la
+  basílica.
+- `nuestra_senora_de_los_remedios.png` es el interior del santuario de Cholula, no la imagen
+  aislada.
+- `el_senor_bom_jesus_da_lapa.png` es el interior de la gruta-santuario, donde está el altar,
+  no la imagen aislada.
+- `el_senor_bom_jesus_de_matosinhos.png` es una vista del santuario de Congonhas, no la imagen
+  aislada.
+- `el_senor_del_gran_poder.png` es una procesión de la fiesta del Gran Poder en La Paz, no el
+  lienzo aislado.
+
+Imágenes de objeto o género, señaladas por el propio tema:
+
+- `nuestra_senora_del_rosario.png` es la pintura de la Virgen del Rosario protegiendo las naves
+  españolas en la batalla de Lepanto.
+- `el_santisimo_sacramento_y_la_adoracion_eucaristica.png` es una custodia, al no existir una
+  imagen única del Santísimo Sacramento.
 - `el_santisimo_nombre_de_jesus.png` es el monograma IHS.
-- `las_cinco_llagas_de_cristo.png` es un relicario/medalla con la imagen de las cinco
-  llagas.
 - `el_via_crucis.png` es una de las estaciones del Vía Crucis.
+
+Imagen de la advocación, verificada en la segunda pasada: `el_senor_de_chalma.png` es el grabado
+titulado «Verdadera imagen del Señor de Chalma»; `las_cinco_llagas_de_cristo.png` es la talla
+policromada del Cristo de las Cinco Llagas; `nuestra_senora_de_la_altagracia.png` es un mosaico
+de la Virgen de la Altagracia.
