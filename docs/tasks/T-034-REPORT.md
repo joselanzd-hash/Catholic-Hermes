@@ -4,62 +4,84 @@
 - **Nota de estado:** el coordinador dijo en 17-nov que se empezara al terminar T-036. La tabla de
   `origin` seguía marcándolo `EN COLA`, así que se adelantó la primera entrega y **queda constancia de
   que se trabaja en él**, como pidió el usuario. No se ha tocado `CatholicGPT`.
-- **Cobertura:** 188 de las 215 fichas tienen imagen. Quedan 27 sin imagen (abajo).
+- **Cobertura:** 184 de las 215 fichas tienen imagen. Quedan 31 sin imagen (abajo).
 
 ## Recuento
 
 | | Cantidad |
 |---|---|
 | Fichas totales (`saints.tsv`) | 215 |
-| **Con imagen** | **188** |
-| Sin imagen | 27 |
+| **Con imagen** | **184** |
+| Sin imagen | 31 |
 | Referenciales | 0 |
-| Tamaño total de `saints/` | ~41 MB (188 JPG a ≤1200 px por lado) |
+| Tamaño total de `saints/` | ~42 MB (184 JPG a ≤1200 px por lado) |
 
-## Las 27 sin imagen y por qué
+## Auditoría externa (17-nov, modelo de visión de Google)
 
-Se dejó sin imagen, como manda el encargo, todo lo que no tiene una obra fiable **del santo concreto**:
+Se generaron **32 hojas de contactos** (6 imágenes por hoja) y se subieron a la rama
+`media/saint-images-hojas` para su revisión. Resultado: **127 SÍ · 35 NO · 26 DUDOSO**.
 
-- **Sin obra en Commons:** `timothy_of_ephesus_and_titus_of_crete_bishops`, `peter_damian_bishop`,
-  `anselm_of_canterbury_bishop`, `nereus_of_terracina_and_achilleus_of_terracina_martyrs`,
-  `bernardine_of_siena_priest`, `christopher_magallanes_priest_and_companions_martyrs`,
-  `bede_the_venerable_priest`, `first_martyrs_of_the_holy_roman_church`,
-  `augustine_zhao_rong_priest_and_companions_martyrs`, `lawrence_of_brindisi_priest`,
-  `sharbel_makhluf_priest`, `dedication_of_the_basilica_of_saint_mary_major`,
-  `sixtus_ii_pope_and_companions_martyrs`, `pontian_i_pope_and_hippolytus_of_rome_priest`,
-  `lawrence_ruiz_and_companions_martyrs`, `denis_of_paris_bishop_and_companions_martyrs`,
-  `columban_of_luxeuil_abbot`.
-- **El candidato era otra cosa** (iglesia, calle, fuente, otro personaje) y se descartó en lugar de
-  entregar una genérica: `dedication_of_the_basilicas_of_saints_peter_and_paul`,
-  `dominic_de_guzman_priest`, `marcellinus_of_rome_and_peter_the_exorcist_martyrs`,
-  `cosmas_of_cilicia_and_damian_of_cilicia_martyrs`, `josaphat_kuntsevych_bishop`,
-  `mary_magdalene_de_pazzi_virgin`, `commemoration_of_all_the_faithful_departed`,
-  `cornelius_i_pope_and_cyprian_of_carthage_bishop_martyrs`, `holy_innocents_martyrs`,
-  `our_lady_of_the_rosary`, `assumption_of_the_blessed_virgin_mary`.
-- **`peter_damian_bishop`** — los candidatos eran iglesias, PDFs o el «vía crucis» de Cosme y Damián.
+- Las **35 NO** eran claramente otra cosa: iglesias, calles, fachadas, criptas vacías, páginas o
+  portadas de libro, escudos heráldicos, un busto relicario sin identificar, un guerrero nórdico, un
+  escultor en su taller, un globo aerostático, estandartes procesionales… Se retiraron.
+- Las **26 DUDOSO** no permitían reconocer al santo (vidrieras diminutas, frescos de techo alejados,
+  negativos borrosos, bustos genéricos). También se retiraron: el encargo no admite una imagen que no
+  represente al santo.
+
+Sustitución: se verificaron **57 reemplazos** en Wikimedia Commons (título, descripción y categorías
+del archivo) y se descargaron. **4 se descartaron** aunque el auditor los propusiera, porque tampoco
+representan al santo:
+
+| Descartado | Motivo |
+|---|---|
+| `all_saints` | el «Landauer Altar» de Durero es la *Adoración de la Trinidad*, no Todos los Santos |
+| `our_lady_of_sorrows` | foto de la Iglesia de la Vera Cruz (Salamanca) |
+| `matthew_apostle` | es el *ángel* de San Mateo, no Mateo |
+| `simon_and_jude_apostles` | políptico de Ugolino di Nerio sin categorías que lo confirmen |
+
+## Las 31 sin imagen
+
+Sin obra fiable **del santo concreto** en Commons, o con un candidato que era otra cosa:
+
+`timothy_of_ephesus_and_titus_of_crete_bishops`, `peter_damian_bishop`,
+`anselm_of_canterbury_bishop`, `nereus_of_terracina_and_achilleus_of_terracina_martyrs`,
+`bernardine_of_siena_priest`, `christopher_magallanes_priest_and_companions_martyrs`,
+`bede_the_venerable_priest`, `mary_magdalene_de_pazzi_virgin`,
+`marcellinus_of_rome_and_peter_the_exorcist_martyrs`, `first_martyrs_of_the_holy_roman_church`,
+`augustine_zhao_rong_priest_and_companions_martyrs`, `lawrence_of_brindisi_priest`,
+`sharbel_makhluf_priest`, `dedication_of_the_basilic_of_saint_mary_major`,
+`sixtus_ii_pope_and_companions_martyrs`, `dominic_de_guzman_priest`,
+`pontian_i_pope_and_hippolytus_of_rome_priest`, `assumption_of_the_blessed_virgin_mary`,
+`our_lady_of_sorrows`, `cornelius_i_pope_and_cyprian_of_carthage_bishop_martyrs`,
+`matthew_apostle`, `cosmas_of_cilicia_and_damian_of_cilicia_martyrs`,
+`lawrence_ruiz_and_companions_martyrs`, `our_lady_of_the_rosary`,
+`denis_of_paris_bishop_and_companions_martyrs`, `simon_and_jude_apostles`, `all_saints`,
+`commemoration_of_all_the_faithful_departed`, `josaphat_kuntsevych_bishop`,
+`columban_of_luxeuil_abbot`, `holy_innocents_martyrs`.
 
 ## Licencias
 
 | Licencia | Cantidad |
 |---|---|
-| Public domain | 101 |
-| CC0 | 37 |
-| CC BY-SA 4.0 | 26 |
-| CC BY-SA 3.0 | 17 |
-| CC BY 4.0 | 8 |
-| CC BY-SA 2.0 | 2 |
-| CC BY 2.5 / CC BY 2.0 / PDM-owner | 1 cada una |
+| Public domain | 121 |
+| CC0 | 27 |
+| CC BY-SA 4.0 | 19 |
+| CC BY-SA 3.0 | 7 |
+| CC BY 4.0 | 7 |
+| CC BY 2.0 / CC BY-SA 2.0 / CC BY 3.0 | 1 cada una |
 
-Todas permitidas (dominio público, CC0, CC BY, CC BY-SA; `PDM-owner` es la marca de dominio público
-de Commons). **Ninguna NC ni ND.** Se descartaron tres imágenes con licencia no permitida o con el
-santo equivocado («Copyrighted free use», «No restrictions»).
+Todas permitidas (dominio público, CC0, CC BY, CC BY-SA). **Ninguna NC ni ND.**
 
 ## Fuentes
 
 - **Wikimedia Commons** (`commons.wikimedia.org`), vía su API. Cada imagen se descargó por el título
   exacto del archivo y su `url` en `credits.json` apunta a la **página del archivo**, no a la imagen.
-- Autor y licencia se tomaron de `extmetadata` (`Artist`, `LicenseShortName`); donde el autor no
-  consta, se dejó vacío. No se ha inventado ningún autor.
+- Autor y licencia se tomaron de `extmetadata` (`Artist`, `LicenseShortName`); solo una entrada tiene
+  el autor vacío (no consta en la ficha). No se ha inventado ningún autor.
+- El grueso de las descargas se hizo de `upload.wikimedia.org`. Wikimedia cortó el acceso a los
+  originales por exceso de peticiones (HTTP 429 con `retry-after: 120`), así que las sustituciones de
+  la auditoría se bajaron como **miniaturas de 1280 px** a través de la caché `images.weserv.nl` y
+  después se redujeron a un máximo de 1200 px por lado.
 - `our_lady_of_lourdes` reutiliza la imagen de la devoción ya integrada en la app
   (`app/src/main/assets/devotions/images/lourdes.jpg`, Fernando Martello, CC BY-SA 4.0), anotado en
   `note`.
@@ -69,24 +91,16 @@ santo equivocado («Copyrighted free use», «No restrictions»).
 1. **Obra del santo concreto**: cuadro, icono, vitral, escultura, grabado o fotografía histórica que
    lo represente; nunca una iglesia, una calle ni una procesión. Se descartaron sistemáticamente los
    PDFs, los vídeos, las fachadas y las páginas de libros.
-2. **Búsqueda en tres rondas**: la del propio nombre, una segunda con consultas dirigidas
-   («painting», «icon», «portrait», «statue») y una tercera con el nombre inglés claro para los 31 que
-   se resistían.
-3. **Antiguo y de dominio público** cuando existe; para santos modernos (Don Bosco, Josefa Bakhita,
-   Teresa de Calcuta) una fotografía histórica o un retrato.
-4. **Sin imagen si no hay obra fiable**, como manda el encargo.
+2. **Antiguo y de dominio público** cuando existe; para santos modernos (Don Bosco, Josefa Bakhita,
+   Teresa de Calcuta, Edith Stein) una fotografía histórica o un retrato.
+3. **Sin imagen si no hay obra fiable**, como manda el encargo.
 
 ## Verificación
 
-- Se generaron **32 hojas de contactos** (6 imágenes por hoja).
-- **Hoja 1 verificada** (Águeda, Inés, Ángela Merici, Anunciación, Ascario, Antonio Abad): correcta.
-- **Hoja 2 verificada** (Basilio y Nacianceno, Blas, Casimiro, Cátedra de Pedro, Conversión de Pablo,
-  Cirilo y Metodio): correcta.
-- **Hojas 3-32 pendientes**: el modelo de visión da ~1 llamada cada 45 min (HTTP 429 con
-  `retry_after` de 2724 s), así que no da tiempo a revisar las 32. La selección se hizo por el
-  **título y la descripción del archivo** de Commons, que es la verificación que pide el encargo, y
-  además se descartaron a mano 20 imágenes cuyo título delataba que no eran el santo. La segunda
-  pasada visual queda pendiente y se hará en cuanto haya cupo.
+- Primera pasada (32 hojas): hecha por el modelo de visión de Google sobre las hojas publicadas en
+  `media/saint-images-hojas`. Resultado arriba.
+- Segunda pasada (las 57 sustituciones): contrastadas una a una contra la ficha de Commons (título,
+  descripción y categorías), no de visu. **Pendiente de una nueva pasada visual.**
 
 ## Formatos
 
@@ -98,5 +112,5 @@ santo equivocado («Copyrighted free use», «No restrictions»).
 
 ## Pendiente
 
-- Verificar visualmente las hojas 3-32 cuando haya cupo y corregir lo que no sea el santo.
-- Revisar si alguno de los 27 sin imagen aparece en Commons con una búsqueda más fina.
+- Pasada visual de las 57 sustituciones (se pueden regenerar las hojas y repetir la auditoría).
+- Buscar obra para los 31 que se han quedado sin imagen.
