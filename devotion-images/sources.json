@@ -1,6 +1,6 @@
 {
   "carpeta": "devotion-images",
-  "total": 67,
+  "total": 68,
   "imagenes": [
     {
       "id": "virgen_del_valle",
@@ -671,6 +671,16 @@
       "licencia": "Desconocida (Derechos: desconocidos; no consta el autor de la fotografía)",
       "autor": "Desconocido",
       "url": "https://www.facebook.com/calimaya04031824/posts/san-andr%C3%A9s-ocotl%C3%A1n-el-pueblo-inicia-el-a%C3%B1o-con-fiesta-y-lo-termina-con-fiest/1276837529817570/"
+    },
+    {
+      "id": "cristo_sentenciado",
+      "titulo": "Cristo Sentenciado (Padre Jesús Sentenciado)",
+      "fichero": "cristo_sentenciado.png",
+      "fuente": "Imagen REFERENCIAL proporcionada por el usuario (Hermandad de la Sentencia, Córdoba, España); no es la imagen de Tecla ni de La Plata",
+      "commons": null,
+      "licencia": "Derechos: Hermandad de la Sentencia (Córdoba) · foto A. Fedriani · uso referencial",
+      "autor": "A. Fedriani",
+      "url": "https://hermandaddelasentencia.org/ntro-padre-jesus-de-la-sentencia/"
     }
   ]
 }

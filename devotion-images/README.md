@@ -2,7 +2,7 @@
 
 Ilustración de cada advocación y devoción de María y de Jesús presente en los datos de
 **Catholic-Hermes** (30 advocaciones marianas y 38 devociones de Cristo, incluidas las 18
-altas del encargo T-019). 67 de las 68 tienen ya ilustración.
+altas del encargo T-019). 68 de las 68 tienen ilustración; una de ellas es **referencial**, no la imagen de la devoción.
 
 Cada fichero se nombra con el nombre de la devoción en español, en minúsculas, sin tildes,
 con `_` en lugar de espacios y extensión `.png` (p. ej. `el_nazareno_de_san_pablo.png`).
@@ -100,20 +100,22 @@ retablo que la aloja; esos casos quedan señalados en «Observaciones».
 | `el_cristo_de_la_agonia.png` | El Cristo de la Agonía | Wikimedia Commons: [Cristo de la Agonía, Juan de Mesa.jpg](https://commons.wikimedia.org/wiki/File:Cristo_de_la_Agonía,_Juan_de_Mesa.jpg) | CC BY 4.0 | José Luis Filpo Cabana |
 | `el_santo_cristo_de_la_victoria.png` | El Santo Cristo de la Victoria | Wikimedia Commons: [CatedralMàlaga-CapellaCristoVictoria.JPG](https://commons.wikimedia.org/wiki/File:CatedralMàlaga-CapellaCristoVictoria.JPG) | CC BY-SA 4.0 | Bocachete |
 | `el_santisimo_cristo_de_ocotlan.png` | El Santísimo Cristo de Ocotlán | Imagen proporcionada por el usuario (Facebook) | Derechos: desconocidos | Desconocido |
+| `cristo_sentenciado.png` | Cristo Sentenciado (Padre Jesús Sentenciado) | Imagen **referencial** del usuario (Hermandad de la Sentencia, Córdoba) | Derechos: Hermandad de la Sentencia · foto A. Fedriani | A. Fedriani |
 
-## Sin imagen verificada
+## Imagen referencial
 
 | Devoción | Motivo |
 |---|---|
-| Cristo Sentenciado (Padre Jesús Sentenciado) | No se ha localizado una imagen verificable de esta advocación concreta. |
+| Cristo Sentenciado (Padre Jesús Sentenciado) | Imagen **referencial**: no es la de la devoción. |
 
 **Cristo Sentenciado (Padre Jesús Sentenciado).** La entrada de la app corresponde al Padre
-Jesús Sentenciado de **Tecla (El Salvador)** y de **La Plata (Bolivia)**. Se encontró una
-imagen de la Hermandad de la Sentencia de **Córdoba (España)**, que es una advocación
-distinta, y no se usó para no confundir una imagen con otra devoción.
+Jesús Sentenciado de **Tecla (El Salvador)** y de **La Plata (Bolivia)**. La imagen incluida
+es **referencial**: es el titular de la Hermandad de la Sentencia de **Córdoba (España)**
+(foto de A. Fedriani), una advocación distinta del mismo tipo. Se incluye solo como
+referencia visual, no como la imagen de la devoción de Tecla ni de La Plata.
 
 No se ha sustituido ninguna devoción por una imagen genérica (un Cristo o una Virgen
-cualquiera) para no inducir a error.
+cualquiera) para no inducir a error; la única excepción es la anterior, declarada referencial.
 
 **El Santísimo Cristo de Ocotlán** quedó con la imagen que proporcionó el usuario. En la
 fotografía no se lee ninguna inscripción que la identifique, y el autor de la fotografía no
