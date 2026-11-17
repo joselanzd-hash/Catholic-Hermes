@@ -2,7 +2,7 @@
 
 Ilustración de cada advocación y devoción de María y de Jesús presente en los datos de
 **Catholic-Hermes** (30 advocaciones marianas y 38 devociones de Cristo, incluidas las 18
-altas del encargo T-019).
+altas del encargo T-019). 67 de las 68 tienen ya ilustración.
 
 Cada fichero se nombra con el nombre de la devoción en español, en minúsculas, sin tildes,
 con `_` en lugar de espacios y extensión `.png` (p. ej. `el_nazareno_de_san_pablo.png`).
@@ -99,17 +99,25 @@ retablo que la aloja; esos casos quedan señalados en «Observaciones».
 | `el_nino_jesus_de_belen.png` | El Niño Jesús de Belén | Wikimedia Commons: [Santo niño de belen.jpg](https://commons.wikimedia.org/wiki/File:Santo_niño_de_belen.jpg) | CC0 | Godspeldemedianoche |
 | `el_cristo_de_la_agonia.png` | El Cristo de la Agonía | Wikimedia Commons: [Cristo de la Agonía, Juan de Mesa.jpg](https://commons.wikimedia.org/wiki/File:Cristo_de_la_Agonía,_Juan_de_Mesa.jpg) | CC BY 4.0 | José Luis Filpo Cabana |
 | `el_santo_cristo_de_la_victoria.png` | El Santo Cristo de la Victoria | Wikimedia Commons: [CatedralMàlaga-CapellaCristoVictoria.JPG](https://commons.wikimedia.org/wiki/File:CatedralMàlaga-CapellaCristoVictoria.JPG) | CC BY-SA 4.0 | Bocachete |
+| `el_santisimo_cristo_de_ocotlan.png` | El Santísimo Cristo de Ocotlán | Imagen proporcionada por el usuario (Facebook) | Derechos: desconocidos | Desconocido |
 
 ## Sin imagen verificada
 
 | Devoción | Motivo |
 |---|---|
-| El Santísimo Cristo de Ocotlán | No se ha localizado una imagen verificable de esta advocación concreta. |
 | Cristo Sentenciado (Padre Jesús Sentenciado) | No se ha localizado una imagen verificable de esta advocación concreta. |
 
-Estas dos devociones no tienen todavía ilustración: no se ha encontrado en Commons ni en
-otra fuente una imagen verificable de la advocación concreta, y no se ha sustituido por una
-imagen genérica (un Cristo o una Virgen cualquiera) para no inducir a error.
+**Cristo Sentenciado (Padre Jesús Sentenciado).** La entrada de la app corresponde al Padre
+Jesús Sentenciado de **Tecla (El Salvador)** y de **La Plata (Bolivia)**. Se encontró una
+imagen de la Hermandad de la Sentencia de **Córdoba (España)**, que es una advocación
+distinta, y no se usó para no confundir una imagen con otra devoción.
+
+No se ha sustituido ninguna devoción por una imagen genérica (un Cristo o una Virgen
+cualquiera) para no inducir a error.
+
+**El Santísimo Cristo de Ocotlán** quedó con la imagen que proporcionó el usuario. En la
+fotografía no se lee ninguna inscripción que la identifique, y el autor de la fotografía no
+consta; por eso se registra con «Derechos: desconocidos».
 
 ## Observaciones
 

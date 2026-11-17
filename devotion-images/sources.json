@@ -1,6 +1,6 @@
 {
   "carpeta": "devotion-images",
-  "total": 66,
+  "total": 67,
   "imagenes": [
     {
       "id": "virgen_del_valle",
@@ -661,6 +661,16 @@
       "licencia": "CC BY-SA 4.0",
       "autor": "Bocachete",
       "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/CatedralM%C3%A0laga-CapellaCristoVictoria.JPG/1920px-CatedralM%C3%A0laga-CapellaCristoVictoria.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+    },
+    {
+      "id": "jesus_de_ocotlan",
+      "titulo": "El Santísimo Cristo de Ocotlán",
+      "fichero": "el_santisimo_cristo_de_ocotlan.png",
+      "fuente": "Imagen proporcionada por el usuario, procedente de un perfil de Facebook",
+      "commons": null,
+      "licencia": "Desconocida (Derechos: desconocidos; no consta el autor de la fotografía)",
+      "autor": "Desconocido",
+      "url": "https://www.facebook.com/calimaya04031824/posts/san-andr%C3%A9s-ocotl%C3%A1n-el-pueblo-inicia-el-a%C3%B1o-con-fiesta-y-lo-termina-con-fiest/1276837529817570/"
     }
   ]
 }
