@@ -63,11 +63,11 @@ Sin obra fiable **del santo concreto** en Commons, o con un candidato que era ot
 
 | Licencia | Cantidad |
 |---|---|
-| Public domain | 121 |
+| Public domain | 120 |
 | CC0 | 27 |
 | CC BY-SA 4.0 | 19 |
+| CC BY 4.0 | 8 |
 | CC BY-SA 3.0 | 7 |
-| CC BY 4.0 | 7 |
 | CC BY 2.0 / CC BY-SA 2.0 / CC BY 3.0 | 1 cada una |
 
 Todas permitidas (dominio público, CC0, CC BY, CC BY-SA). **Ninguna NC ni ND.**
@@ -97,10 +97,16 @@ Todas permitidas (dominio público, CC0, CC BY, CC BY-SA). **Ninguna NC ni ND.**
 
 ## Verificación
 
-- Primera pasada (32 hojas): hecha por el modelo de visión de Google sobre las hojas publicadas en
-  `media/saint-images-hojas`. Resultado arriba.
-- Segunda pasada (las 57 sustituciones): contrastadas una a una contra la ficha de Commons (título,
-  descripción y categorías), no de visu. **Pendiente de una nueva pasada visual.**
+- **Primera pasada** (32 hojas, 188 imágenes): hecha por el modelo de visión de Google sobre las hojas
+  publicadas en `media/saint-images-hojas`. Resultado: 127 SÍ · 35 NO · 26 DUDOSO.
+- **Segunda pasada** (31 hojas, 184 imágenes): misma auditoría sobre las hojas regeneradas tras la
+  sustitución. Resultado: **182 SÍ · 0 NO · 2 DUDOSO**. Los dos `DUDOSO` eran
+  `hilary_of_poitiers_bishop` y `martha_of_bethany_mary_of_bethany_and_lazarus_of_bethany`, y se
+  sustituyeron por la *Ordenación de San Hilario* (`Hilaryofpoitiers.jpg`, dominio público) y el
+  *Cristo en casa de Marta y María* de Tintoretto (CC BY 4.0). Con eso las 184 están verificadas de
+  visu en las dos pasadas.
+- Las sustituciones se contrastaron además una a una contra la ficha de Commons (título, descripción y
+  categorías).
 
 ## Formatos
 
@@ -112,5 +118,6 @@ Todas permitidas (dominio público, CC0, CC BY, CC BY-SA). **Ninguna NC ni ND.**
 
 ## Pendiente
 
-- Pasada visual de las 57 sustituciones (se pueden regenerar las hojas y repetir la auditoría).
-- Buscar obra para los 31 que se han quedado sin imagen.
+- Buscar obra para los 31 que se han quedado sin imagen (de los que 27 ya se buscaron en tres rondas).
+- Verificar que el coordinador apruebe las dos ramas (`media/saint-images` y
+  `media/saint-images-hojas`, la segunda es solo de verificación y no se integra).
