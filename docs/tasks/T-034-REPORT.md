@@ -63,10 +63,10 @@ Sin obra fiable **del santo concreto** en Commons, o con un candidato que era ot
 
 | Licencia | Cantidad |
 |---|---|
-| Public domain | 119 |
+| Public domain | 120 |
 | CC0 | 28 |
 | CC BY-SA 4.0 | 19 |
-| CC BY 4.0 | 8 |
+| CC BY 4.0 | 7 |
 | CC BY-SA 3.0 | 7 |
 | CC BY 2.0 / CC BY-SA 2.0 / CC BY 3.0 | 1 cada una |
 
@@ -101,9 +101,11 @@ Todas permitidas (dominio público, CC0, CC BY, CC BY-SA). **Ninguna NC ni ND.**
   publicadas en `media/saint-images-hojas`. Resultado: 127 SÍ · 35 NO · 26 DUDOSO.
 - **Segunda pasada** (31 hojas, 184 imágenes): misma auditoría sobre las hojas regeneradas tras la
   sustitución. Resultado: **182 SÍ · 0 NO · 2 DUDOSO**.
-  - `martha_of_bethany_mary_of_bethany_and_lazarus_of_bethany`: el fichero «(cropped2)» era un detalle
-    de *La lechera* de Vermeer (una mujer con cesta de pan), no Marta ni María. Se cambió por el
-    *Cristo en casa de Marta y María* de Tintoretto (CC BY 4.0).
+  - `martha_of_bethany_mary_of_bethany_and_lazarus_of_bethany`: se dejó el Vermeer completo
+    (*Cristo en casa de Marta y María*, dominio público): se ve a Cristo, a María a sus pies y a Marta
+    con la cesta de pan. El fichero «(cropped2)» era un recorte de este mismo cuadro (el primer modelo
+    de visión lo confundió con *La lechera*), y el primer auditor la dio por dudosa; el cuadro entero
+    es la mejor opción.
   - `hilary_of_poitiers_bishop`: el auditor describió una «miniatura de consagración genérica», pero
     esa descripción era de `Hilaryofpoitiers.jpg`; el icono `Hilary of Poitiers.png` que había en su
     lugar **sí es San Hilario** (inscrito «saint hilaire de Poitiers»). Tras verlo, se recupera el
