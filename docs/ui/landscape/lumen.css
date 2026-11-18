@@ -1,0 +1,173 @@
+/* Lumen · tokens reales extraídos de DesignSystem.kt (LumenShapes / LumenSpacing /
+   LumenLight / LumenDark). Las maquetas landscape usan ESTA hoja, no colores
+   inventados, para que el crítico juzgue la piel real de la app. */
+
+:root {
+  /* LumenLight */
+  --canvas: #F0F2F8;
+  --canvas-top: #F4F6FB;
+  --grouped: #FAFBFD;
+  --raised: #FFFFFF;
+  --hairline: rgba(27, 37, 64, .12);
+  --separator: rgba(27, 37, 64, .12);
+  --accent: #2A6E38;
+  --accent-muted: #E1EEE3;
+  --gold: #8A6418;
+  --text-1: #0F1424;
+  --text-2: #4C546B;
+  --text-3: #505870;
+  --selection: #E6EAF4;
+
+  /* LumenShapes */
+  --r-card: 28px;
+  --r-group: 24px;
+  --r-thumb: 18px;
+  --r-sheet: 34px;
+  --r-dialog: 32px;
+
+  /* LumenSpacing */
+  --gutter: 20px;
+  --section-gap: 28px;
+  --card-pad: 20px;
+  --card-gap: 14px;
+  --row-min: 52px;
+
+  /* LandscapeMetrics */
+  --l-rail: 76px;
+  --l-rail-item: 56px;
+  --l-pane-min: 260px;
+  --l-pane-gap: 12px;
+  --l-pane-pad: 14px;
+  --l-read-max: 640px;
+  --l-touch: 44px;
+  --l-header: 52px;
+}
+
+[data-theme="dark"] {
+  --canvas: #0A0E1C;
+  --canvas-top: #0C1122;
+  --grouped: #171D31;
+  --raised: #1F2740;
+  --hairline: rgba(255, 255, 255, .14);
+  --separator: rgba(255, 255, 255, .12);
+  --accent: #7FC48A;
+  --accent-muted: #1D3328;
+  --gold: #E3C27A;
+  --text-1: #F1F4FF;
+  --text-2: #AAB3CF;
+  --text-3: #9BA4C0;
+  --selection: #283150;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  background: #5A6070;
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* El "teléfono" en horizontal. Tamaños reales en dp. */
+.phone {
+  position: relative;
+  background: linear-gradient(180deg, var(--canvas-top), var(--canvas));
+  color: var(--text-1);
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  display: flex;
+  flex-direction: column;
+}
+.phone.w844 { width: 844px; height: 390px; }
+.phone.w915 { width: 915px; height: 412px; }
+.phone.w740 { width: 740px; height: 360px; }
+
+.phone-label {
+  position: absolute; top: -0px; left: 0; right: 0;
+  font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-3); padding: 3px 10px; z-index: 5;
+}
+
+/* Armazón: raíl + paneles */
+.frame { display: flex; flex: 1; min-height: 0; }
+.rail {
+  width: var(--l-rail); flex: 0 0 var(--l-rail);
+  border-right: 1px solid var(--separator);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 0; gap: 2px; overflow-y: auto;
+}
+.rail-item {
+  width: 64px; min-height: var(--l-rail-item);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; border-radius: 16px; color: var(--text-2); font-size: 10px; text-align: center;
+  padding: 4px 2px;
+}
+.rail-item.on { background: var(--accent-muted); color: var(--accent); font-weight: 600; }
+.rail-ico { font-size: 19px; line-height: 1; }
+
+.pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.pane.index { flex: 0 0 34%; min-width: var(--l-pane-min); border-right: 1px solid var(--separator); }
+.pane.read { flex: 1; }
+.pane-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--l-pane-pad); }
+.pane-body.no-scroll { overflow: hidden; }
+
+/* Cabecera compacta */
+.hdr {
+  height: var(--l-header); flex: 0 0 var(--l-header);
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 var(--l-pane-pad); border-bottom: 1px solid var(--separator);
+}
+.hdr h1 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.hdr .sub { font-size: 12px; color: var(--text-2); }
+.hdr .sp { flex: 1; }
+
+/* Superficies Lumen */
+.card {
+  background: var(--raised); border: 1px solid var(--hairline);
+  border-radius: var(--r-card); padding: var(--card-pad);
+}
+.group { background: var(--grouped); border-radius: var(--r-group); overflow: hidden; }
+.row {
+  min-height: var(--row-min); display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px; border-bottom: 1px solid var(--separator); font-size: 14px;
+}
+.row:last-child { border-bottom: 0; }
+.row.on { background: var(--selection); }
+.row .t { flex: 1; min-width: 0; }
+.row .t b { display: block; font-weight: 600; font-size: 14px; }
+.row .t span { display: block; font-size: 12px; color: var(--text-2); }
+.row .chev { color: var(--text-3); font-size: 15px; }
+
+.btn {
+  min-height: var(--l-touch); border-radius: 999px; border: 0;
+  background: var(--accent); color: #fff; font-size: 14px; font-weight: 600;
+  padding: 0 18px; display: inline-flex; align-items: center; gap: 8px;
+}
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.chip {
+  border-radius: 999px; background: var(--accent-muted); color: var(--accent);
+  font-size: 12px; font-weight: 600; padding: 6px 12px; display: inline-block;
+}
+
+/* Lectura */
+.reading { max-width: var(--l-read-max); font-size: 15px; line-height: 1.55; color: var(--text-1); }
+.reading p + p { margin-top: 10px; }
+.reading .v { color: var(--text-3); font-size: 11px; font-weight: 700; margin-right: 6px; }
+
+/* Cuentas del rosario */
+.beads { display: flex; flex-wrap: wrap; gap: 7px; align-content: flex-start; }
+.bead { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--accent); opacity: .5; }
+.bead.done { background: var(--accent); opacity: 1; }
+.bead.now { background: var(--gold); border-color: var(--gold); opacity: 1; transform: scale(1.25); }
+.decade { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.decade .n { font-size: 11px; color: var(--text-3); width: 16px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--card-gap); }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--card-gap); }
+.muted { color: var(--text-2); }
+.small { font-size: 12px; }
+.tiny { font-size: 11px; color: var(--text-3); }

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Rosario &middot; landscape v2</title>
+<link rel="stylesheet" href="lumen.css">
+<style>
+/* --- afinado v2 tras la crítica --- */
+.beads { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; flex: 1; }
+.bead { width: 100%; aspect-ratio: 1; height: auto; border-radius: 50%;
+        border: 1.6px solid var(--accent); opacity: 1; background: transparent; }
+[data-theme="dark"] .bead { border-color: #7FC48A; }
+.bead.done { background: var(--accent); }
+.bead.now { background: var(--gold); border-color: var(--gold);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 30%, transparent); }
+.decade { display: flex; gap: 8px; align-items: center; margin-bottom: 7px; }
+.decade .n { font-size: 11px; color: var(--text-2); width: 12px; font-weight: 600; }
+.mystery { font-size: 15px; font-weight: 600; margin: 1px 0 2px; }
+.mystery-sub { margin-bottom: 10px; }
+.actions { display: flex; gap: 8px; margin-top: 12px; }
+.hdr .sub { color: var(--text-2); font-size: 12px; }
+.ico-btn { min-width: 30px; height: 30px; display: inline-flex; align-items: center;
+           justify-content: center; border-radius: 999px; color: var(--text-2);
+           font-size: 13px; font-weight: 600; }
+.next-card { margin-top: 16px; padding: 14px 16px; border-radius: var(--r-group); }
+.next-t { font-size: 14px; font-weight: 600; margin: 2px 0 3px; }
+.next-row { display: flex; align-items: center; gap: 10px; margin-top: 12px;
+            padding: 10px 14px; border-radius: var(--r-group);
+            background: var(--grouped); border: 1px solid var(--hairline); }
+.next-name { flex: 1; font-size: 14px; font-weight: 600; }
+.next-row .chev { color: var(--text-2); font-size: 18px; }
+.phone.w740 .decade { margin-bottom: 5px; }
+.phone.w740 .mystery { font-size: 14px; }
+.phone.w740 .actions { margin-top: 8px; }
+.phone.w740 .next-card { margin-top: 12px; padding: 12px 14px; }
+</style>
+</head><body>
+<div class="phone w844" data-theme="light">
+  <div class="frame">
+    <div class="rail">
+      <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+      <div class="rail-item on"><span class="rail-ico">&#10047;</span>Rosario</div>
+      <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+      <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+      <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+    </div>
+
+    <div class="pane index">
+      <div class="hdr"><h1>Rosario</h1><span class="sp"></span><span class="chip">Gozosos</span></div>
+      <div class="pane-body no-scroll">
+        <div class="tiny">MISTERIO 2 DE 5</div>
+        <div class="mystery">La Visitaci&oacute;n</div>
+        <div class="small muted mystery-sub">Mar&iacute;a visita a su prima Isabel</div>
+        <div class="decade"><span class="n">1</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i></div></div>
+        <div class="decade"><span class="n">2</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead now"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">3</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">4</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">5</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="actions">
+          <button class="btn" style="flex:1">Siguiente cuenta</button>
+          <button class="btn ghost" aria-label="Reiniciar">&#8634;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane read">
+      <div class="hdr"><h1>Ave Mar&iacute;a</h1><span class="sub">&middot; 4/10</span><span class="sp"></span>
+        <span class="ico-btn">Aa</span><span class="ico-btn">&#9834;</span></div>
+      <div class="pane-body">
+        <div class="reading">
+          <p>Dios te salve, Mar&iacute;a, llena eres de gracia; el Se&ntilde;or es contigo. Bendita t&uacute; eres entre todas las mujeres, y bendito es el fruto de tu vientre, Jes&uacute;s.</p>
+          <p>Santa Mar&iacute;a, Madre de Dios, ruega por nosotros, pecadores, ahora y en la hora de nuestra muerte. Am&eacute;n.</p>
+        </div>
+        <div class="card next-card">
+          <div class="tiny">EVANGELIO DEL MISTERIO</div>
+          <div class="next-t">Lucas 1, 39&ndash;45</div>
+          <div class="small muted">Mar&iacute;a se pone en camino y visita a Isabel.</div>
+        </div>
+        <div class="next-row">
+          <span class="tiny">SIGUIENTE ORACI&Oacute;N</span>
+          <span class="next-name">Padre Nuestro</span>
+          <span class="chev">&rsaquo;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone w915" data-theme="dark">
+  <div class="frame">
+    <div class="rail">
+      <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+      <div class="rail-item on"><span class="rail-ico">&#10047;</span>Rosario</div>
+      <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+      <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+      <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+    </div>
+
+    <div class="pane index">
+      <div class="hdr"><h1>Rosario</h1><span class="sp"></span><span class="chip">Gozosos</span></div>
+      <div class="pane-body no-scroll">
+        <div class="tiny">MISTERIO 2 DE 5</div>
+        <div class="mystery">La Visitaci&oacute;n</div>
+        <div class="small muted mystery-sub">Mar&iacute;a visita a su prima Isabel</div>
+        <div class="decade"><span class="n">1</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i></div></div>
+        <div class="decade"><span class="n">2</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead now"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">3</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">4</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">5</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="actions">
+          <button class="btn" style="flex:1">Siguiente cuenta</button>
+          <button class="btn ghost" aria-label="Reiniciar">&#8634;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane read">
+      <div class="hdr"><h1>Ave Mar&iacute;a</h1><span class="sub">&middot; 4/10</span><span class="sp"></span>
+        <span class="ico-btn">Aa</span><span class="ico-btn">&#9834;</span></div>
+      <div class="pane-body">
+        <div class="reading">
+          <p>Dios te salve, Mar&iacute;a, llena eres de gracia; el Se&ntilde;or es contigo. Bendita t&uacute; eres entre todas las mujeres, y bendito es el fruto de tu vientre, Jes&uacute;s.</p>
+          <p>Santa Mar&iacute;a, Madre de Dios, ruega por nosotros, pecadores, ahora y en la hora de nuestra muerte. Am&eacute;n.</p>
+        </div>
+        <div class="card next-card">
+          <div class="tiny">EVANGELIO DEL MISTERIO</div>
+          <div class="next-t">Lucas 1, 39&ndash;45</div>
+          <div class="small muted">Mar&iacute;a se pone en camino y visita a Isabel.</div>
+        </div>
+        <div class="next-row">
+          <span class="tiny">SIGUIENTE ORACI&Oacute;N</span>
+          <span class="next-name">Padre Nuestro</span>
+          <span class="chev">&rsaquo;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone w740" data-theme="light">
+  <div class="frame">
+    <div class="rail">
+      <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+      <div class="rail-item on"><span class="rail-ico">&#10047;</span>Rosario</div>
+      <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+      <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+      <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+    </div>
+
+    <div class="pane index">
+      <div class="hdr"><h1>Rosario</h1><span class="sp"></span><span class="chip">Gozosos</span></div>
+      <div class="pane-body no-scroll">
+        <div class="tiny">MISTERIO 2 DE 5</div>
+        <div class="mystery">La Visitaci&oacute;n</div>
+        
+        <div class="decade"><span class="n">1</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i></div></div>
+        <div class="decade"><span class="n">2</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead now"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">3</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">4</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="decade"><span class="n">5</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        <div class="actions">
+          <button class="btn" style="flex:1">Siguiente cuenta</button>
+          <button class="btn ghost" aria-label="Reiniciar">&#8634;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane read">
+      <div class="hdr"><h1>Ave Mar&iacute;a</h1><span class="sub">&middot; 4/10</span><span class="sp"></span>
+        <span class="ico-btn">Aa</span><span class="ico-btn">&#9834;</span></div>
+      <div class="pane-body">
+        <div class="reading">
+          <p>Dios te salve, Mar&iacute;a, llena eres de gracia; el Se&ntilde;or es contigo. Bendita t&uacute; eres entre todas las mujeres, y bendito es el fruto de tu vientre, Jes&uacute;s.</p>
+          <p>Santa Mar&iacute;a, Madre de Dios, ruega por nosotros, pecadores, ahora y en la hora de nuestra muerte. Am&eacute;n.</p>
+        </div>
+        <div class="card next-card">
+          <div class="tiny">EVANGELIO DEL MISTERIO</div>
+          <div class="next-t">Lucas 1, 39&ndash;45</div>
+          <div class="small muted">Mar&iacute;a se pone en camino y visita a Isabel.</div>
+        </div>
+        <div class="next-row">
+          <span class="tiny">SIGUIENTE ORACI&Oacute;N</span>
+          <span class="next-name">Padre Nuestro</span>
+          <span class="chev">&rsaquo;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>
