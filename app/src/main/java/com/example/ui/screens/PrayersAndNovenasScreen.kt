@@ -120,6 +120,10 @@ import com.example.data.repository.PrayerDetailsCatalog
 import com.example.data.models.PrayerDetails
 import com.example.data.models.NovenaPromise
 import com.example.ui.design.AppActionBar
+import com.example.ui.design.AppHeroImage
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.design.AppBanner
 import com.example.ui.design.AppCard
 import com.example.ui.design.AppSectionHeader
@@ -1219,6 +1223,127 @@ internal fun PrayerDetailView(
         prayer.category.title.get(currentLanguage)
     ).joinToString(" · ")
 
+    val form = rememberLandscapeForm()
+
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val actionBar: @Composable () -> Unit = {
+        AppActionBar(Modifier.widthIn(min = 220.dp)) {
+            AppActionBarItem(
+                icon = Icons.Outlined.IosShare,
+                contentDescription = currentLanguage.pick("Compartir", "Share", "Compartilhar"),
+                onClick = {
+                    sharePrayerText(context, title, listOfNotNull(leader, response).joinToString("\n\n"))
+                },
+                tag = "share_prayer_${prayer.id}"
+            )
+            AppActionBarItem(
+                icon = if (speaking) Icons.Filled.Stop else Icons.Outlined.Headphones,
+                contentDescription = if (speaking) currentLanguage.pick("Detener", "Stop", "Parar")
+                else currentLanguage.pick("Escuchar", "Listen", "Ouvir"),
+                onClick = if (speaking) onStopAudio else onPlayAudio,
+                tag = "play_prayer_audio_${prayer.id}",
+                active = speaking
+            )
+            AppActionBarItem(
+                icon = Icons.Outlined.TextFields,
+                contentDescription = currentLanguage.pick("Tamaño del texto", "Text size", "Tamanho do texto"),
+                onClick = { showReading = true },
+                tag = "prayer_text_settings"
+            )
+        }
+    }
+    val readingBlock: @Composable () -> Unit = {
+        Column {
+            PrayerReadingText(leader, highlighted = currentlySpeaking == leader)
+            if (response != null) {
+                Spacer(Modifier.height(16.dp))
+                PrayerReadingText(response, highlighted = currentlySpeaking == response)
+            }
+        }
+    }
+    val aboutBlock: @Composable () -> Unit = {
+        PrayerSectionHeader(currentLanguage.pick("Acerca de esta oración", "About this prayer", "Sobre esta oração"))
+        Column {
+            val notes = listOfNotNull(
+                currentLanguage.pick("Cuándo rezarla", "When to pray it", "Quando rezá-la") to
+                    prayer.whenToPray.get(currentLanguage),
+                prayer.indulgenceNote?.let {
+                    currentLanguage.pick("Indulgencia", "Indulgence", "Indulgência") to it.get(currentLanguage)
+                }
+            ).filter { it.second.isNotBlank() }
+            notes.forEachIndexed { i, (label, text) ->
+                NoteRow(label, text, prayerGroupPosition(i, notes.size))
+            }
+        }
+    }
+
+    // Landscape phone: the 300dp art header alone fills a 390dp-tall screen and
+    // pushes the whole prayer below the fold. Art, title and controls become a
+    // fixed left pane; the prayer text gets the right pane and the only scroll.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("prayer_detail_${prayer.id}"),
+            leftWidthFraction = 0.40f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(if (form.isShortLandscape) 78.dp else 104.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                        ) {
+                            AppHeroImage(
+                                rememberFirstAsset(prayerArt(prayer), ArtLily),
+                                Modifier.fillMaxSize(),
+                                fadeToCanvas = false,
+                                topVeil = false
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = title,
+                            style = styles.title2,
+                            color = p.textPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.testTag("prayer_detail_title")
+                        )
+                        if (meta.isNotBlank()) {
+                            Spacer(Modifier.height(3.dp))
+                            Text(
+                                text = meta,
+                                style = styles.footnote,
+                                color = p.textSecondary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { actionBar() }
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp, end = 16.dp, top = 12.dp, bottom = bottomPadding + 16.dp
+                    )
+                ) {
+                    item(key = "text") { readingBlock() }
+                    if (details != null) item(key = "details") { PrayerDetailsSections(details, currentLanguage) }
+                    item(key = "about") { aboutBlock() }
+                }
+            }
+        )
+        if (showReading) PrayerReadingSheet(currentLanguage) { showReading = false }
+        return
+    }
+
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -1240,58 +1365,15 @@ internal fun PrayerDetailView(
                     .fillMaxWidth()
                     .padding(horizontal = design.spacing.gutter)
                     .padding(top = 2.dp)
-            ) {
-                PrayerReadingText(leader, highlighted = currentlySpeaking == leader)
-                if (response != null) {
-                    Spacer(Modifier.height(16.dp))
-                    PrayerReadingText(response, highlighted = currentlySpeaking == response)
-                }
-            }
+            ) { readingBlock() }
         }
         item(key = "actions") {
             Box(Modifier.fillMaxWidth().padding(top = 32.dp), contentAlignment = Alignment.Center) {
-                AppActionBar(Modifier.widthIn(min = 220.dp)) {
-                    AppActionBarItem(
-                        icon = Icons.Outlined.IosShare,
-                        contentDescription = currentLanguage.pick("Compartir", "Share", "Compartilhar"),
-                        onClick = {
-                            sharePrayerText(context, title, listOfNotNull(leader, response).joinToString("\n\n"))
-                        },
-                        tag = "share_prayer_${prayer.id}"
-                    )
-                    AppActionBarItem(
-                        icon = if (speaking) Icons.Filled.Stop else Icons.Outlined.Headphones,
-                        contentDescription = if (speaking) currentLanguage.pick("Detener", "Stop", "Parar")
-                        else currentLanguage.pick("Escuchar", "Listen", "Ouvir"),
-                        onClick = if (speaking) onStopAudio else onPlayAudio,
-                        tag = "play_prayer_audio_${prayer.id}",
-                        active = speaking
-                    )
-                    AppActionBarItem(
-                        icon = Icons.Outlined.TextFields,
-                        contentDescription = currentLanguage.pick("Tamaño del texto", "Text size", "Tamanho do texto"),
-                        onClick = { showReading = true },
-                        tag = "prayer_text_settings"
-                    )
-                }
+                actionBar()
             }
         }
         if (details != null) item(key = "details") { PrayerDetailsSections(details, currentLanguage) }
-        item(key = "about") {
-            PrayerSectionHeader(currentLanguage.pick("Acerca de esta oración", "About this prayer", "Sobre esta oração"))
-            Column {
-                val notes = listOfNotNull(
-                    currentLanguage.pick("Cuándo rezarla", "When to pray it", "Quando rezá-la") to
-                        prayer.whenToPray.get(currentLanguage),
-                    prayer.indulgenceNote?.let {
-                        currentLanguage.pick("Indulgencia", "Indulgence", "Indulgência") to it.get(currentLanguage)
-                    }
-                ).filter { it.second.isNotBlank() }
-                notes.forEachIndexed { i, (label, text) ->
-                    NoteRow(label, text, prayerGroupPosition(i, notes.size))
-                }
-            }
-        }
+        item(key = "about") { aboutBlock() }
     }
 
     if (showReading) PrayerReadingSheet(currentLanguage) { showReading = false }
