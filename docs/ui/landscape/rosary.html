@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
-<title>Rosario &middot; landscape v4</title>
+<title>Rosario &middot; landscape v5</title>
 <link rel="stylesheet" href="lumen.css">
 <style>
 /* ===== v4 ===== */
@@ -18,13 +18,11 @@
 .decade { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 .decade .n { font-size: 12px; color: var(--text-2); width: 13px; font-weight: 600; }
 
-/* N7: el alto extra de la 915 se reparte en cuentas y aire, no en franja muerta */
+/* N7: el alto extra se reparte con .decades (space-between), no con margenes
+   fijos por tamano, que era lo que dejaba franja muerta abajo. */
 .phone.w915 .beads { gap: 8px; }
-.phone.w915 .decade { margin-bottom: 14px; }
-.phone.w915 .pane-body { padding-bottom: 16px; }
-.phone.w915 .actions { margin-top: 16px; }
-.phone.w844 .decade { margin-bottom: 11px; }
-.phone.w844 .actions { margin-top: 14px; }
+.phone.w844 .beads { gap: 6px; }
+.decade { margin-bottom: 0; }
 
 .meta { font-size: 12px; color: var(--text-2); line-height: 1.35; }
 .mystery { font-size: 16px; font-weight: 600; margin: 2px 0 3px; color: var(--text-1); }
@@ -32,9 +30,10 @@
 .hdr .sub { color: var(--text-2); font-size: 13px; }
 
 /* N1: los DOS iconos llevan superficie visible de 44dp. Un objetivo tactil
-   invisible no es un objetivo: el usuario no puede apuntar a lo que no ve. */
+   invisible no es un objetivo: el usuario no puede apuntar a lo que no ve.
+   v5: selectionTint en vez de grouped, que apenas se distinguia del canvas. */
 .ico-btn { width: 44px; height: 44px; min-width: 44px; border: 1px solid var(--hairline);
-           background: var(--grouped);
+           background: var(--selection);
            display: inline-flex; align-items: center; justify-content: center;
            border-radius: 999px; color: var(--text-2); font-size: 14px; font-weight: 600;
            cursor: pointer; margin-left: 6px; }
@@ -47,9 +46,19 @@
 
 .reading { max-width: 480px; font-size: 16px; line-height: 1.6; }
 
-.btn { min-height: 46px; }
+.btn { min-height: 46px; justify-content: center; text-align: center; }
 .btn.sq { width: 46px; min-width: 46px; padding: 0; justify-content: center; }
-.actions { display: flex; gap: 8px; margin-top: 12px; }
+.btn-block { display: flex; width: 100%; justify-content: center; text-align: center; }
+.actions { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
+
+/* ===== v5 / N7: el alto se REPARTE, no se deja como franja muerta =====
+   El panel central es una columna flex: las decenas crecen para ocupar el
+   alto disponible y los controles quedan anclados abajo. El padding inferior
+   es UNO solo para los tres tamanos. */
+.pane.index .pane-body { display: flex; flex-direction: column; padding: 12px 16px 16px; }
+.pane.read .pane-body { padding: 12px 16px 16px; }
+.decades { display: flex; flex-direction: column; justify-content: space-between; flex: 1; min-height: 0; }
+.hdr { height: 56px; padding: 8px 16px; }
 .next-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; width: 100%;
             min-height: 52px; padding: 8px 14px; border-radius: var(--r-group);
             background: var(--grouped); border: 1px solid var(--hairline);
@@ -60,19 +69,17 @@
 .next-t { font-size: 15px; font-weight: 600; margin: 2px 0 3px; }
 .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-.phone.w740 .decade { margin-bottom: 6px; }
 .phone.w740 .mystery { font-size: 15px; }
-.phone.w740 .actions { margin-top: 9px; }
 .phone.w740 .next-card { margin-top: 10px; padding: 11px 14px; }
 .phone.w740 .reading { font-size: 15px; }
-.phone.w740 .hdr { height: 48px; }
+.phone.w740 .hdr { height: 52px; }
 
 /* ===== anexo de estados, sin recortes (N3) ===== */
 .states { display: flex; flex-wrap: wrap; gap: 18px; width: 100%; }
 .state-box { width: 460px; }
 .state-cap { color: #E8EAF2; font-size: 12px; font-weight: 600; margin: 0 0 6px 2px;
              letter-spacing: .04em; text-transform: uppercase; }
-.state-phone { width: 460px; height: 260px; }
+.state-phone { width: 460px; height: 224px; }
 /* N6: el skeleton espeja la estructura real (rail + indice + lectura) */
 .skel { height: 12px; border-radius: 6px; background: var(--selection); margin-bottom: 10px; }
 .skel.w60 { width: 60%; } .skel.w85 { width: 85%; } .skel.w40 { width: 40%; }
@@ -83,9 +90,10 @@
        border-radius: var(--r-group); background: var(--grouped);
        border: 1px solid var(--hairline); }
 .err .ico { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%;
-            background: var(--accent-muted); color: var(--accent);
+            background: color-mix(in srgb, var(--gold) 18%, transparent); color: var(--gold);
             display: inline-flex; align-items: center; justify-content: center;
             font-size: 15px; font-weight: 700; }
+.err .ico.ok { background: var(--accent-muted); color: var(--accent); }
 .expand { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px;
           border-radius: 999px; border: 1px solid var(--accent); background: transparent;
           color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer;
@@ -112,11 +120,13 @@
         <div class="meta">MISTERIO 2 DE 5</div>
         <div class="mystery">La Visitaci&oacute;n</div>
         <div class="meta mystery-sub">Mar&iacute;a visita a su prima Isabel</div>
+        <div class="decades">
         <div class="decade"><span class="n">1</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i></div></div>
         <div class="decade"><span class="n">2</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead now"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">3</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">4</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">5</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        </div>
         <div class="actions">
           <button class="btn" style="flex:1">Siguiente cuenta</button>
           <button class="btn ghost sq" aria-label="Reiniciar">&#8634;</button>
@@ -165,11 +175,13 @@
         <div class="meta">MISTERIO 2 DE 5</div>
         <div class="mystery">La Visitaci&oacute;n</div>
         <div class="meta mystery-sub">Mar&iacute;a visita a su prima Isabel</div>
+        <div class="decades">
         <div class="decade"><span class="n">1</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i></div></div>
         <div class="decade"><span class="n">2</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead now"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">3</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">4</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">5</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        </div>
         <div class="actions">
           <button class="btn" style="flex:1">Siguiente cuenta</button>
           <button class="btn ghost sq" aria-label="Reiniciar">&#8634;</button>
@@ -218,11 +230,13 @@
         <div class="meta">MISTERIO 2 DE 5</div>
         <div class="mystery">La Visitaci&oacute;n</div>
         
+        <div class="decades">
         <div class="decade"><span class="n">1</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i></div></div>
         <div class="decade"><span class="n">2</span><div class="beads"><i class="bead done"></i><i class="bead done"></i><i class="bead done"></i><i class="bead now"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">3</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">4</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
         <div class="decade"><span class="n">5</span><div class="beads"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead"></i></div></div>
+        </div>
         <div class="actions">
           <button class="btn" style="flex:1">Siguiente cuenta</button>
           <button class="btn ghost sq" aria-label="Reiniciar">&#8634;</button>
@@ -280,7 +294,7 @@
         <div class="pane-body">
           <div class="err"><span class="ico">!</span>
             <span class="meta" style="flex:1">No se pudo cargar el texto de esta oraci&oacute;n.</span></div>
-          <button class="btn" style="margin-top:12px;width:100%">Reintentar</button>
+          <button class="btn btn-block" style="margin-top:12px">Reintentar</button>
           <div class="meta" style="margin-top:10px">Puedes seguir rezando: las cuentas y el progreso se conservan.</div>
         </div>
       </div></div>
@@ -311,7 +325,7 @@
           <button class="ico-btn">Aa</button><button class="ico-btn on">&#10073;&#10073;</button></div>
         <div class="pane-body">
           <div class="reading"><p>Dios te salve, Mar&iacute;a, llena eres de gracia; el Se&ntilde;or es contigo.</p></div>
-          <div class="err" style="margin-top:12px"><span class="ico">&#9654;</span>
+          <div class="err" style="margin-top:12px"><span class="ico ok">&#10073;&#10073;</span>
             <span class="meta" style="flex:1">Leyendo en voz alta &middot; cuenta 4 de 10</span>
             <button class="btn ghost" style="min-height:44px">Detener</button></div>
         </div>
@@ -319,16 +333,17 @@
     </div>
   </div>
   <div class="state-box">
-    <p class="state-cap">Vac&iacute;o &middot; sin resultados</p>
+    <p class="state-cap">Vac&iacute;o &middot; a&uacute;n no hay misterio elegido</p>
     <div class="phone state-phone" data-theme="dark">
       <div class="frame"><div class="pane read" style="flex:1">
         
-        <div class="hdr"><h1>Buscar oraci&oacute;n</h1><span class="sp"></span></div>
+        <div class="hdr"><h1>Rosario</h1><span class="sp"></span>
+          <button class="ico-btn">Aa</button></div>
         <div class="pane-body"><div class="empty">
-          <span class="g">&#9906;</span>
-          <div style="font-size:15px;font-weight:600">Sin resultados</div>
-          <div class="meta">Prueba con otro nombre o quita los filtros.</div>
-          <button class="expand">Quitar filtros</button>
+          <span class="g">&#10047;</span>
+          <div style="font-size:15px;font-weight:600">Elige los misterios de hoy</div>
+          <div class="meta">Hoy toca Misterios Gozosos. Puedes cambiarlos cuando quieras.</div>
+          <button class="expand">Empezar el rosario</button>
         </div></div>
       </div></div>
     </div>
