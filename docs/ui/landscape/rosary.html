@@ -1,11 +1,14 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
-<title>Rosario &middot; landscape v3</title>
+<title>Rosario &middot; landscape v4</title>
 <link rel="stylesheet" href="lumen.css">
 <style>
-/* ===== v3: correcciones exigidas por el critico ===== */
+/* ===== v4 ===== */
 
-/* (3) cuentas huecas: contorno a plena intensidad del acento, 2dp */
+/* N5: canvas PLANO, el token exacto, sin gradiente inventado */
+.phone { background: var(--canvas); }
+
+/* (3/N8) cuentas: rejilla fija de 10, contorno de 2dp a plena intensidad */
 .beads { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; flex: 1; }
 .bead { width: 100%; aspect-ratio: 1; height: auto; border-radius: 50%;
         border: 2px solid var(--accent); background: transparent; opacity: 1; }
@@ -13,36 +16,37 @@
 .bead.now { background: var(--gold); border-color: var(--gold);
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 32%, transparent); }
 .decade { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-/* (4) numeros de decena: 12px y secundario exacto */
 .decade .n { font-size: 12px; color: var(--text-2); width: 13px; font-weight: 600; }
 
-/* (6) el alto sobrante va a cuentas mayores, no a margen */
-.phone.w915 .beads { gap: 7px; }
-.phone.w915 .decade { margin-bottom: 11px; }
-.phone.w844 .decade { margin-bottom: 10px; }
+/* N7: el alto extra de la 915 se reparte en cuentas y aire, no en franja muerta */
+.phone.w915 .beads { gap: 8px; }
+.phone.w915 .decade { margin-bottom: 14px; }
+.phone.w915 .pane-body { padding-bottom: 16px; }
+.phone.w915 .actions { margin-top: 16px; }
+.phone.w844 .decade { margin-bottom: 11px; }
+.phone.w844 .actions { margin-top: 14px; }
 
-/* (4) metadatos: 12px y color secundario del sistema */
 .meta { font-size: 12px; color: var(--text-2); line-height: 1.35; }
 .mystery { font-size: 16px; font-weight: 600; margin: 2px 0 3px; color: var(--text-1); }
 .mystery-sub { margin-bottom: 10px; }
 .hdr .sub { color: var(--text-2); font-size: 13px; }
 
-/* (1) objetivos tactiles de 44dp para los iconos de cabecera */
-.ico-btn { width: 44px; height: 44px; min-width: 44px; border: 0; background: transparent;
+/* N1: los DOS iconos llevan superficie visible de 44dp. Un objetivo tactil
+   invisible no es un objetivo: el usuario no puede apuntar a lo que no ve. */
+.ico-btn { width: 44px; height: 44px; min-width: 44px; border: 1px solid var(--hairline);
+           background: var(--grouped);
            display: inline-flex; align-items: center; justify-content: center;
            border-radius: 999px; color: var(--text-2); font-size: 14px; font-weight: 600;
-           cursor: pointer; }
-.ico-btn.on { background: var(--accent-muted); color: var(--accent); }
+           cursor: pointer; margin-left: 6px; }
+.ico-btn.on { background: var(--accent-muted); color: var(--accent); border-color: transparent; }
 
-/* (7) el chip de misterios es un selector, con chevron */
+/* N2: el selector de misterios tambien es un objetivo de 44dp */
 .chip.sel { border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
-            min-height: 32px; font-family: inherit; }
-.chip.sel .cv { font-size: 14px; line-height: 1; }
+            min-height: 44px; padding: 0 14px; font-family: inherit; font-size: 13px; }
+.chip.sel .cv { font-size: 15px; line-height: 1; }
 
-/* (2) medida de lectura acotada */
 .reading { max-width: 480px; font-size: 16px; line-height: 1.6; }
 
-/* (5) controles: nunca por debajo de 44dp; la fila siguiente, 52dp */
 .btn { min-height: 46px; }
 .btn.sq { width: 46px; min-width: 46px; padding: 0; justify-content: center; }
 .actions { display: flex; gap: 8px; margin-top: 12px; }
@@ -54,10 +58,8 @@
 .next-row .chev { color: var(--text-2); font-size: 18px; }
 .next-card { margin-top: 14px; padding: 14px 16px; border-radius: var(--r-group); }
 .next-t { font-size: 15px; font-weight: 600; margin: 2px 0 3px; }
-/* (8) texto largo: clamp de 2 lineas, no desborda */
 .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* el mas justo: se recorta metadata/interlineado, NUNCA los objetivos tactiles */
 .phone.w740 .decade { margin-bottom: 6px; }
 .phone.w740 .mystery { font-size: 15px; }
 .phone.w740 .actions { margin-top: 9px; }
@@ -65,17 +67,32 @@
 .phone.w740 .reading { font-size: 15px; }
 .phone.w740 .hdr { height: 48px; }
 
-/* ===== (8) anexo de estados ===== */
-.states { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; }
-.state-box { width: 400px; }
+/* ===== anexo de estados, sin recortes (N3) ===== */
+.states { display: flex; flex-wrap: wrap; gap: 18px; width: 100%; }
+.state-box { width: 460px; }
 .state-cap { color: #E8EAF2; font-size: 12px; font-weight: 600; margin: 0 0 6px 2px;
              letter-spacing: .04em; text-transform: uppercase; }
-.skel { height: 12px; border-radius: 6px; background: var(--selection); margin-bottom: 9px; }
+.state-phone { width: 460px; height: 260px; }
+/* N6: el skeleton espeja la estructura real (rail + indice + lectura) */
+.skel { height: 12px; border-radius: 6px; background: var(--selection); margin-bottom: 10px; }
 .skel.w60 { width: 60%; } .skel.w85 { width: 85%; } .skel.w40 { width: 40%; }
+.skel.bead { height: 16px; width: 16px; border-radius: 50%; display: inline-block; margin: 0 5px 5px 0; }
+.skel.bar { height: 44px; border-radius: 999px; }
+/* N4: error con icono, mensaje y recuperacion */
 .err { display: flex; align-items: center; gap: 10px; padding: 12px 14px;
        border-radius: var(--r-group); background: var(--grouped);
        border: 1px solid var(--hairline); }
-.err .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: 0 0 8px; }
+.err .ico { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%;
+            background: var(--accent-muted); color: var(--accent);
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 15px; font-weight: 700; }
+.expand { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px;
+          border-radius: 999px; border: 1px solid var(--accent); background: transparent;
+          color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer;
+          font-family: inherit; margin-top: 8px; }
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center;
+         height: 100%; gap: 8px; text-align: center; }
+.empty .g { font-size: 26px; color: var(--text-3); }
 </style>
 </head><body>
 <div class="phone w844" data-theme="light">
@@ -237,40 +254,82 @@
   </div>
 </div>
 
-
 <div class="states">
   <div class="state-box">
-    <p class="state-cap">Carga</p>
-    <div class="phone w740" data-theme="light" style="height:200px">
+    <p class="state-cap">Carga &middot; espeja las tres zonas</p>
+    <div class="phone state-phone" data-theme="light">
       <div class="frame"><div class="pane read" style="flex:1">
-        <div class="hdr"><h1>Ave Mar&iacute;a</h1><span class="sp"></span></div>
-        <div class="pane-body"><div class="skel w85"></div><div class="skel"></div>
-          <div class="skel w60"></div><div class="skel w40"></div></div>
-      </div></div>
-    </div>
-  </div>
-  <div class="state-box">
-    <p class="state-cap">Error de carga</p>
-    <div class="phone w740" data-theme="light" style="height:200px">
-      <div class="frame"><div class="pane read" style="flex:1">
-        <div class="hdr"><h1>Ave Mar&iacute;a</h1><span class="sp"></span></div>
+        
+        <div class="hdr"><h1>Ave Mar&iacute;a</h1><span class="sp"></span>
+          <span class="ico-btn">Aa</span><span class="ico-btn">&#9654;</span></div>
         <div class="pane-body">
-          <div class="err"><span class="dot"></span>
-            <span class="meta" style="flex:1">No se pudo cargar el texto.</span>
-            <button class="btn ghost" style="min-height:40px">Reintentar</button></div>
+          <div class="skel w40"></div>
+          <div><i class="skel bead"></i><i class="skel bead"></i><i class="skel bead"></i><i class="skel bead"></i><i class="skel bead"></i><i class="skel bead"></i><i class="skel bead"></i><i class="skel bead"></i><i class="skel bead"></i><i class="skel bead"></i></div>
+          <div class="skel w85" style="margin-top:8px"></div><div class="skel"></div><div class="skel w60"></div>
+          <div class="skel bar" style="margin-top:10px"></div>
         </div>
       </div></div>
     </div>
   </div>
   <div class="state-box">
-    <p class="state-cap">Texto largo &middot; clamp + expansi&oacute;n</p>
-    <div class="phone w740" data-theme="dark" style="height:200px">
+    <p class="state-cap">Error &middot; con recuperaci&oacute;n</p>
+    <div class="phone state-phone" data-theme="light">
       <div class="frame"><div class="pane read" style="flex:1">
+        
+        <div class="hdr"><h1>Ave Mar&iacute;a</h1><span class="sp"></span></div>
+        <div class="pane-body">
+          <div class="err"><span class="ico">!</span>
+            <span class="meta" style="flex:1">No se pudo cargar el texto de esta oraci&oacute;n.</span></div>
+          <button class="btn" style="margin-top:12px;width:100%">Reintentar</button>
+          <div class="meta" style="margin-top:10px">Puedes seguir rezando: las cuentas y el progreso se conservan.</div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+  <div class="state-box">
+    <p class="state-cap">Texto largo &middot; clamp + Mostrar todo</p>
+    <div class="phone state-phone" data-theme="dark">
+      <div class="frame"><div class="pane read" style="flex:1">
+        
         <div class="hdr"><h1>Salve</h1><span class="sub">&middot; 1/1</span><span class="sp"></span>
           <button class="ico-btn on">Aa</button></div>
-        <div class="pane-body"><div class="reading" style="font-size:19px">
-          <p>Dios te salve, Reina y Madre de misericordia, vida, dulzura y esperanza nuestra; Dios te salve. A ti clamamos los desterrados hijos de Eva&hellip;</p>
-        </div><div class="meta" style="margin-top:6px">Mostrar todo</div></div>
+        <div class="pane-body">
+          <div class="reading clamp" style="font-size:18px;max-width:420px">
+            <p>Dios te salve, Reina y Madre de misericordia, vida, dulzura y esperanza nuestra; Dios te salve. A ti clamamos los desterrados hijos de Eva; a ti suspiramos, gimiendo y llorando en este valle de l&aacute;grimas.</p>
+          </div>
+          <button class="expand">Mostrar todo</button>
+        </div>
+      </div></div>
+    </div>
+  </div>
+  <div class="state-box">
+    <p class="state-cap">Audio activo</p>
+    <div class="phone state-phone" data-theme="light">
+      <div class="frame"><div class="pane read" style="flex:1">
+        
+        <div class="hdr"><h1>Ave Mar&iacute;a</h1><span class="sub">&middot; 4/10</span><span class="sp"></span>
+          <button class="ico-btn">Aa</button><button class="ico-btn on">&#10073;&#10073;</button></div>
+        <div class="pane-body">
+          <div class="reading"><p>Dios te salve, Mar&iacute;a, llena eres de gracia; el Se&ntilde;or es contigo.</p></div>
+          <div class="err" style="margin-top:12px"><span class="ico">&#9654;</span>
+            <span class="meta" style="flex:1">Leyendo en voz alta &middot; cuenta 4 de 10</span>
+            <button class="btn ghost" style="min-height:44px">Detener</button></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+  <div class="state-box">
+    <p class="state-cap">Vac&iacute;o &middot; sin resultados</p>
+    <div class="phone state-phone" data-theme="dark">
+      <div class="frame"><div class="pane read" style="flex:1">
+        
+        <div class="hdr"><h1>Buscar oraci&oacute;n</h1><span class="sp"></span></div>
+        <div class="pane-body"><div class="empty">
+          <span class="g">&#9906;</span>
+          <div style="font-size:15px;font-weight:600">Sin resultados</div>
+          <div class="meta">Prueba con otro nombre o quita los filtros.</div>
+          <button class="expand">Quitar filtros</button>
+        </div></div>
       </div></div>
     </div>
   </div>
