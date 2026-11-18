@@ -93,5 +93,8 @@ No se ha podido obtener emblema ni con licencia libre ni de la web oficial (la w
   emblema hasta hallar el correcto.
 - `javerianos-sx` y `marianistas-sm` también excluidos: lo que había era la mascota de un colegio
   y el emblema de los maristas. Sin emblema.
-- `escolapios-schp` y `combonianos-mccj`: sí se consiguió el escudo oficial de su web.
+- `combonianos-mccj`: sí se consiguió el escudo oficial de su web (`comboni.org`).
+- `escolapios-schp`: **pendiente**. El escudo oficial está en `escolapios.org.co/logotipos/`, pero ese
+  dominio no admite la conexión desde este equipo (WinError 10013). En Commons sí hay escudo de la
+  Orden (CC BY-SA 4.0) y quedó pendiente de descarga.
 - Ningún autor está inventado: solo se rellena cuando consta en la ficha.
