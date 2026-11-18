@@ -27,7 +27,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,11 +59,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.example.data.audio.LiturgicalTtsManager
@@ -73,6 +78,7 @@ import com.example.data.models.VaticanPrayer
 import com.example.data.repository.CatholicDataRepository
 import com.example.ui.design.AppBackHandler
 import com.example.ui.design.AppDetailHeader
+import com.example.ui.design.AppEmptyState
 import com.example.ui.design.AppGlassIconButton
 import com.example.ui.design.AppGlassSurface
 import com.example.ui.design.AppHideTabBar
@@ -85,12 +91,17 @@ import com.example.ui.design.AppPrimaryCapsule
 import com.example.ui.design.AppProgressBar
 import com.example.ui.design.AppSecondaryCapsule
 import com.example.ui.design.AppTransportBar
+import com.example.ui.design.LandscapeMetrics
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
 import com.example.ui.design.appScreenInsets
 import com.example.ui.design.lumenGlass
 import com.example.ui.design.lumenPress
 import com.example.ui.design.rememberFirstAsset
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
+import kotlinx.coroutines.launch
 
 /*
  * The night office — a calm nocturne.
@@ -255,6 +266,7 @@ fun NightPrayersScreen(
                     traditionalTotal = traditionalSteps.size,
                     traditionalDone = traditionalDone.size,
                     currentLanguage = currentLanguage,
+                    ttsManager = ttsManager,
                     onOpen = onOpenOffice
                 )
             }
@@ -288,12 +300,127 @@ private fun NightOverview(
     traditionalTotal: Int,
     traditionalDone: Int,
     currentLanguage: AppLanguage,
+    ttsManager: LiturgicalTtsManager,
     onOpen: (Int) -> Unit
 ) {
     val design = LocalAppDesign.current
     val styles = LocalAppTextStyles.current
     val p = design.palette
     val antiphon = compline.marianAntiphons.getOrNull(seasonalAntiphon)
+
+    // ---- Landscape phone: the three offices fixed on the left, the season's
+    // Marian antiphon already reading on the right. No hero, no scroll chrome.
+    val landscapeForm = rememberLandscapeForm()
+    if (landscapeForm.isCompactPhone) {
+        val isNarrating by ttsManager.isPlaying.collectAsState()
+        val bottomInset = appScreenInsets().calculateBottomPadding()
+        LandscapeTwoPane(
+            form = landscapeForm,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize().testTag("night_office_picker")) {
+                        Text(
+                            currentLanguage.pick("Oración de la noche", "Night prayer", "Oração da noite"),
+                            style = styles.title2, color = p.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        val offices = listOf(
+                            Triple(
+                                currentLanguage.pick("Completas", "Compline", "Completas"),
+                                listOfNotNull(
+                                    currentLanguage.pick("8 partes", "8 parts", "8 partes"),
+                                    antiphon?.titleLatin
+                                ).joinToString(" · "),
+                                "night_office_compline"
+                            ),
+                            Triple(
+                                currentLanguage.pick("Examen ignaciano", "Ignatian examen", "Exame inaciano"),
+                                officeMeta(examenDone, examenTotal, currentLanguage),
+                                "night_office_examen"
+                            ),
+                            Triple(
+                                currentLanguage.pick("Oración tradicional", "Traditional prayer", "Oração tradicional"),
+                                officeMeta(traditionalDone, traditionalTotal, currentLanguage),
+                                "night_office_traditional"
+                            )
+                        )
+                        offices.forEachIndexed { i, (title, meta, tag) ->
+                            AppGlassSurface(
+                                Modifier.fillMaxWidth().testTag(tag),
+                                shape = design.shapes.listGroup,
+                                onClick = { onOpen(i) },
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        if (i == 2) Icons.Outlined.Bedtime else Icons.Outlined.NightsStay,
+                                        null, tint = p.textPrimary, modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(title, style = styles.body, color = p.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(meta, style = styles.footnote, color = p.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        Spacer(Modifier.weight(1f))
+                        if (antiphon != null) {
+                            Text(antiphon.seasonTag.get(currentLanguage), style = styles.footnote, color = p.textSecondary)
+                            Text(antiphon.titleLatin, style = styles.subhead, color = p.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            },
+            right = {
+                PaneSurface {
+                    if (antiphon == null) {
+                        AppEmptyState(currentLanguage.pick("Elige un oficio", "Choose an office", "Escolha um ofício"))
+                    } else {
+                        Column(Modifier.fillMaxSize().testTag("night_antiphon_card")) {
+                            Text(
+                                currentLanguage.pick("Antífona a la Virgen", "Antiphon to Our Lady", "Antífona a Nossa Senhora"),
+                                style = styles.title2, color = p.textPrimary, maxLines = 1
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                                Text(antiphon.seasonTag.get(currentLanguage), style = styles.footnote, color = p.textSecondary)
+                                Spacer(Modifier.height(6.dp))
+                                Text(antiphon.titleLatin, style = styles.title2, color = p.textPrimary)
+                                Spacer(Modifier.height(12.dp))
+                                LiturgicalText(antiphon.latinText, muted = true, latin = true)
+                                Spacer(Modifier.height(14.dp))
+                                LiturgicalText(antiphon.translatedText.get(currentLanguage))
+                                Spacer(Modifier.height(16.dp))
+                            }
+                            AppSecondaryCapsule(
+                                label = if (isNarrating) currentLanguage.pick("Detener", "Stop", "Parar")
+                                else currentLanguage.pick(
+                                    "Escuchar ${antiphon.titleLatin}",
+                                    "Listen to ${antiphon.titleLatin}",
+                                    "Ouvir ${antiphon.titleLatin}"
+                                ),
+                                onClick = {
+                                    if (isNarrating) ttsManager.stop()
+                                    else ttsManager.speakSingle(
+                                        antiphon.translatedText.get(currentLanguage),
+                                        title = antiphon.titleTranslation.get(currentLanguage)
+                                    )
+                                },
+                                icon = if (isNarrating) Icons.Filled.Stop else Icons.Outlined.Headphones,
+                                fillWidth = true,
+                                tag = "night_antiphon_listen",
+                                modifier = Modifier.padding(bottom = bottomInset)
+                            )
+                        }
+                    }
+                }
+            }
+        )
+        return
+    }
+
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = appScreenInsets().calculateBottomPadding() + 32.dp)
@@ -463,6 +590,274 @@ private fun ComplineView(
             append("\n\n")
         }
     }.trim()
+
+    // ---- Landscape phone: the eight parts as a fixed index on the left; the
+    // office reads as one continuous page on the right (its single scroll),
+    // with listen and text-size fixed. Tapping a part jumps the scroll to it.
+    val landscapeForm = rememberLandscapeForm()
+    if (landscapeForm.isCompactPhone) {
+        val listState = rememberLazyListState()
+        val scope = rememberCoroutineScope()
+        val bottomInset = appScreenInsets().calculateBottomPadding()
+        val partCaptions = listOf(
+            currentLanguage.pick("Invocación inicial", "Opening versicle", "Invocação inicial"),
+            currentLanguage.pick("Acto penitencial", "Penitential act", "Ato penitencial"),
+            currentLanguage.pick("Himno de Completas", "Hymn at Compline", "Hino de Completas"),
+            currentLanguage.pick("Extracto del salmo", "Psalm excerpt", "Trecho do salmo"),
+            currentLanguage.pick("Lectura breve y responsorio", "Short reading and responsory", "Leitura breve e responsório"),
+            currentLanguage.pick("Cántico evangélico", "Gospel canticle", "Cântico evangélico"),
+            currentLanguage.pick("Oración conclusiva", "Concluding prayer", "Oração conclusiva"),
+            currentLanguage.pick("Antífona mariana final", "Final Marian antiphon", "Antífona mariana final")
+        )
+        // Item 0 is the selection note; parts 1..8 sit at indices 1..8.
+        val currentPart = (listState.firstVisibleItemIndex - 1).coerceIn(0, partCaptions.lastIndex)
+        LandscapeTwoPane(
+            form = landscapeForm,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        Text(title, style = styles.title2, color = p.textPrimary, maxLines = 1)
+                        Spacer(Modifier.height(8.dp))
+                        LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
+                            itemsIndexed(partCaptions, key = { i, _ -> "part_index_$i" }) { i, caption ->
+                                val active = i == currentPart
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = LandscapeMetrics.touchTarget)
+                                        .lumenPress({ scope.launch { listState.animateScrollToItem(i + 1) } }, 0.99f)
+                                        .semantics { selected = active },
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        Modifier
+                                            .size(28.dp)
+                                            .then(if (active) Modifier.background(p.action, CircleShape) else Modifier.lumenGlass(CircleShape, lifted = false)),
+                                        contentAlignment = Alignment.Center
+                                    ) { Text("${i + 1}", style = styles.footnote, color = if (active) p.onAction else p.textPrimary) }
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        caption, style = styles.subhead,
+                                        color = if (active) p.accent else p.textPrimary,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            right = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize().testTag("night_compline_reader")) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                currentLanguage.pick("Oración de la noche", "Night prayer", "Oração da noite"),
+                                style = styles.footnote, color = p.textSecondary,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            AppGlassIconButton(
+                                icon = Icons.Outlined.TextFields,
+                                contentDescription = currentLanguage.pick("Tamaño del texto", "Text size", "Tamanho do texto"),
+                                onClick = { showReading = true },
+                                tag = "compline_text_settings"
+                            )
+                        }
+                        LazyColumn(
+                            Modifier.weight(1f).fillMaxWidth(),
+                            state = listState,
+                            contentPadding = PaddingValues(bottom = 8.dp)
+                        ) {
+                            item(key = "note") {
+                                Text(compline.selectionNote.get(currentLanguage), style = styles.footnote, color = p.textSecondary)
+                                Spacer(Modifier.height(12.dp))
+                            }
+                            item(key = "part1") {
+                                OfficePart(
+                                    number = 1,
+                                    caption = currentLanguage.pick("Invocación inicial", "Opening versicle", "Invocação inicial"),
+                                    reference = "Deus in adiutórium",
+                                    latinText = compline.openingVerseLatin,
+                                    latinShown = 1 in latinParts,
+                                    onToggleLatin = { toggleLatin(1) },
+                                    currentLanguage = currentLanguage
+                                ) { LiturgicalText(compline.openingVerseTranslation.get(currentLanguage)) }
+                            }
+                            item(key = "part2") {
+                                OfficePart(
+                                    number = 2,
+                                    caption = currentLanguage.pick("Acto penitencial", "Penitential act", "Ato penitencial"),
+                                    reference = "Confiteor Deo omnipotenti",
+                                    latinText = ConfiteorLatin,
+                                    latinShown = 2 in latinParts,
+                                    onToggleLatin = { toggleLatin(2) },
+                                    currentLanguage = currentLanguage
+                                ) { LiturgicalText(compline.confiteorText.get(currentLanguage)) }
+                            }
+                            item(key = "part3") {
+                                OfficePart(
+                                    number = 3,
+                                    caption = currentLanguage.pick("Himno de Completas", "Hymn at Compline", "Hino de Completas"),
+                                    reference = compline.hymnLatinTitle,
+                                    latinText = compline.hymnLatin,
+                                    latinShown = 3 in latinParts,
+                                    onToggleLatin = { toggleLatin(3) },
+                                    currentLanguage = currentLanguage
+                                ) { LiturgicalText(compline.hymnTranslation.get(currentLanguage)) }
+                            }
+                            item(key = "part4") {
+                                OfficePart(
+                                    number = 4,
+                                    caption = currentLanguage.pick("Extracto del salmo", "Psalm excerpt", "Trecho do salmo"),
+                                    reference = compline.psalmReference,
+                                    latinText = PsalmLatin,
+                                    latinShown = 4 in latinParts,
+                                    onToggleLatin = { toggleLatin(4) },
+                                    currentLanguage = currentLanguage
+                                ) {
+                                    AntiphonLine(compline.psalmAntiphon.get(currentLanguage))
+                                    Spacer(Modifier.height(16.dp))
+                                    stichs(compline.psalmText.get(currentLanguage)).forEachIndexed { index, stich ->
+                                        VerseLine(index + 1, stich)
+                                    }
+                                }
+                            }
+                            item(key = "part5") {
+                                OfficePart(
+                                    number = 5,
+                                    caption = currentLanguage.pick("Lectura breve y responsorio", "Short reading and responsory", "Leitura breve e responsório"),
+                                    reference = compline.readingReference,
+                                    latinText = compline.responsoryLatin,
+                                    latinShown = 5 in latinParts,
+                                    onToggleLatin = { toggleLatin(5) },
+                                    currentLanguage = currentLanguage
+                                ) {
+                                    LiturgicalText(compline.readingText.get(currentLanguage))
+                                    Spacer(Modifier.height(22.dp))
+                                    Text(
+                                        currentLanguage.pick("Responsorio breve", "Short responsory", "Responsório breve"),
+                                        style = styles.footnote,
+                                        color = p.textSecondary
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    LiturgicalText(compline.responsoryTranslation.get(currentLanguage))
+                                }
+                            }
+                            item(key = "part6") {
+                                OfficePart(
+                                    number = 6,
+                                    caption = currentLanguage.pick("Cántico evangélico (Nunc Dimittis)", "Gospel canticle (Nunc Dimittis)", "Cântico evangélico (Nunc Dimittis)"),
+                                    reference = "Canticum Simeonis (Lc 2, 29-32)",
+                                    latinText = "${compline.canticleAntiphon.get(currentLanguage)}\n\n" + compline.canticleOfSimeonLatin,
+                                    latinShown = 6 in latinParts,
+                                    onToggleLatin = { toggleLatin(6) },
+                                    currentLanguage = currentLanguage
+                                ) {
+                                    AntiphonLine(compline.canticleAntiphon.get(currentLanguage))
+                                    Spacer(Modifier.height(16.dp))
+                                    val canticle = compline.canticleOfSimeonTranslation.get(currentLanguage).split("\n\n")
+                                    canticle.first().split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+                                        .forEachIndexed { index, stich -> VerseLine(NuncDimittisFirstVerse + index, stich) }
+                                    val doxology = canticle.drop(1).joinToString("\n\n").trim()
+                                    if (doxology.isNotEmpty()) {
+                                        Spacer(Modifier.height(14.dp))
+                                        LiturgicalText(doxology)
+                                    }
+                                }
+                            }
+                            item(key = "part7") {
+                                OfficePart(
+                                    number = 7,
+                                    caption = currentLanguage.pick("Oración conclusiva y bendición", "Concluding prayer and blessing", "Oração conclusiva e bênção"),
+                                    reference = "Oratio et Benedictio",
+                                    latinText = ConcludingLatin,
+                                    latinShown = 7 in latinParts,
+                                    onToggleLatin = { toggleLatin(7) },
+                                    currentLanguage = currentLanguage
+                                ) {
+                                    LiturgicalText(compline.concludingPrayer.get(currentLanguage))
+                                    Spacer(Modifier.height(16.dp))
+                                    LiturgicalText(compline.blessing.get(currentLanguage), muted = true)
+                                }
+                            }
+                            if (currentAntiphon != null) {
+                                item(key = "part8") {
+                                    PartHeading(
+                                        number = 8,
+                                        caption = currentLanguage.pick("Antífona mariana final", "Final Marian antiphon", "Antífona mariana final"),
+                                        reference = currentAntiphon.seasonTag.get(currentLanguage),
+                                        trailing = null
+                                    )
+                                    AppMenuChip(
+                                        label = currentAntiphon.titleLatin,
+                                        icon = Icons.Outlined.NightsStay,
+                                        tag = "marian_antiphon_picker",
+                                        items = compline.marianAntiphons.mapIndexed { index, antiphon ->
+                                            AppMenuItem(
+                                                label = antiphon.titleLatin,
+                                                selected = index == selectedMarianAntiphonIndex,
+                                                tag = "marian_antiphon_$index",
+                                                onClick = { selectedMarianAntiphonIndex = index }
+                                            )
+                                        }
+                                    )
+                                    Spacer(Modifier.height(16.dp))
+                                    AppGlassSurface(
+                                        Modifier.fillMaxWidth(),
+                                        contentPadding = PaddingValues(design.spacing.cardPadding)
+                                    ) {
+                                        Column {
+                                            Text(currentAntiphon.titleTranslation.get(currentLanguage), style = styles.title2, color = p.textPrimary)
+                                            Spacer(Modifier.height(14.dp))
+                                            LiturgicalText(currentAntiphon.latinText, muted = true, latin = true)
+                                            Spacer(Modifier.height(14.dp))
+                                            LiturgicalText(currentAntiphon.translatedText.get(currentLanguage))
+                                            Spacer(Modifier.height(20.dp))
+                                            AppSecondaryCapsule(
+                                                label = if (isNarrating) currentLanguage.pick("Detener", "Stop", "Parar")
+                                                else currentLanguage.pick(
+                                                    "Escuchar ${currentAntiphon.titleLatin}",
+                                                    "Listen to ${currentAntiphon.titleLatin}",
+                                                    "Ouvir ${currentAntiphon.titleLatin}"
+                                                ),
+                                                onClick = {
+                                                    if (isNarrating) ttsManager.stop()
+                                                    else ttsManager.speakSingle(
+                                                        currentAntiphon.translatedText.get(currentLanguage),
+                                                        title = currentAntiphon.titleTranslation.get(currentLanguage)
+                                                    )
+                                                },
+                                                icon = if (isNarrating) Icons.Filled.Stop else Icons.Outlined.Headphones,
+                                                tag = "marian_antiphon_tts"
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        AppSecondaryCapsule(
+                            label = if (isNarrating) currentLanguage.pick("Detener", "Stop", "Parar")
+                            else currentLanguage.pick("Escuchar la oración", "Listen to the prayer", "Ouvir a oração"),
+                            onClick = { if (isNarrating) ttsManager.stop() else ttsManager.speakSingle(officeText, title = title) },
+                            icon = if (isNarrating) Icons.Filled.Stop else Icons.Outlined.Headphones,
+                            fillWidth = true,
+                            tag = "compline_tts_button",
+                            modifier = Modifier
+                                .padding(top = 8.dp, bottom = bottomInset)
+                                .semantics {
+                                    stateDescription = if (isNarrating) currentLanguage.pick("Narrando", "Narrating", "Narrando")
+                                    else currentLanguage.pick("Detenido", "Stopped", "Parado")
+                                }
+                        )
+                    }
+                }
+            }
+        )
+        if (showReading) PrayerReadingSheet(currentLanguage) { showReading = false }
+        return
+    }
 
     LazyColumn(
         Modifier
@@ -949,6 +1344,185 @@ private fun GuidedOfficeView(
     )
     val doneLabel = currentLanguage.pick("Hecho", "Done", "Feito")
     val pendingLabel = currentLanguage.pick("Pendiente", "Pending", "Pendente")
+
+    // ---- Landscape phone (the Rosary precedent): progress and the step index
+    // fixed on the left with the done action; the step's text on the right in
+    // one scroll, the transport fixed in the thumb zone. Nothing essential moves.
+    val landscapeForm = rememberLandscapeForm()
+    if (landscapeForm.isCompactPhone) {
+        val bottomInset = appScreenInsets().calculateBottomPadding()
+        val toggle: () -> Unit = {
+            if (step != null) {
+                if (step.number in done) {
+                    onDone(done - step.number)
+                } else {
+                    val now = done + step.number
+                    onDone(now)
+                    val nextIndex = steps.indexOfFirst { it.number !in now && it.number > step.number }
+                        .takeIf { it >= 0 } ?: steps.indexOfFirst { it.number !in now }
+                    if (nextIndex >= 0) onSelect(nextIndex)
+                }
+            }
+        }
+        LandscapeTwoPane(
+            form = landscapeForm,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        Text(title, style = styles.title2, color = p.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(eyebrow, style = styles.footnote, color = p.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Spacer(Modifier.height(10.dp))
+                        AppProgressBar(
+                            if (total == 0) 0f else done.size.toFloat() / total,
+                            color = if (total > 0 && done.size == total) p.success else null,
+                            modifier = Modifier.semantics {
+                                contentDescription = progressLabel
+                                stateDescription = stepsDoneText
+                            }
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(stepsDoneText, style = styles.footnote, color = p.textSecondary)
+                        Spacer(Modifier.height(8.dp))
+                        LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
+                            itemsIndexed(steps, key = { _, s -> "step_${s.number}" }) { i, s ->
+                                PrayerNumberedStep(
+                                    number = s.number,
+                                    title = s.title,
+                                    body = null,
+                                    done = s.number in done,
+                                    current = i == index,
+                                    onClick = { onSelect(i) },
+                                    modifier = Modifier
+                                        .testTag("${rootTag}_step_${s.number}")
+                                        .semantics { stateDescription = if (s.number in done) doneLabel else pendingLabel }
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        if (step != null && step.number in done) {
+                            AppSecondaryCapsule(
+                                label = currentLanguage.pick("Hecho · Deshacer", "Done · Undo", "Feito · Desfazer"),
+                                onClick = toggle,
+                                icon = Icons.Filled.Check,
+                                fillWidth = true,
+                                tag = "${rootTag}_done",
+                                modifier = Modifier
+                                    .padding(bottom = bottomInset)
+                                    .semantics { stateDescription = doneLabel }
+                            )
+                        } else {
+                            AppPrimaryCapsule(
+                                label = currentLanguage.pick("Marcar como hecho", "Mark as done", "Marcar como feito"),
+                                onClick = toggle,
+                                icon = Icons.Filled.Check,
+                                tag = "${rootTag}_done",
+                                modifier = Modifier
+                                    .padding(bottom = bottomInset)
+                                    .semantics { stateDescription = pendingLabel }
+                            )
+                        }
+                    }
+                }
+            },
+            right = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize().testTag(rootTag)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                if (step != null) currentLanguage.pick("Paso ${step.number} de $total", "Step ${step.number} of $total", "Passo ${step.number} de $total")
+                                else title,
+                                style = styles.footnote, color = p.textSecondary,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            AppGlassIconButton(
+                                icon = Icons.Outlined.TextFields,
+                                contentDescription = currentLanguage.pick("Tamaño del texto", "Text size", "Tamanho do texto"),
+                                onClick = { showReading = true }
+                            )
+                        }
+                        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                            Text(intro, style = styles.subhead, color = p.textSecondary)
+                            Spacer(Modifier.height(14.dp))
+                            if (total > 0 && done.size == total) {
+                                AppGlassSurface(
+                                    Modifier.fillMaxWidth().testTag("${rootTag}_complete"),
+                                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 22.dp)
+                                ) {
+                                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Box(Modifier.size(40.dp).background(p.action, CircleShape), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Filled.Check, null, tint = p.onAction, modifier = Modifier.size(22.dp))
+                                        }
+                                        Spacer(Modifier.height(14.dp))
+                                        Text(
+                                            completionTitle, style = styles.title2, color = p.textPrimary, textAlign = TextAlign.Center,
+                                            modifier = Modifier.semantics { heading() }
+                                        )
+                                        Spacer(Modifier.height(10.dp))
+                                        Text(
+                                            completionText,
+                                            style = styles.reading.copy(fontStyle = FontStyle.Italic),
+                                            color = p.textSecondary,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            } else if (step != null) {
+                                AppGlassSurface(
+                                    Modifier.fillMaxWidth(),
+                                    contentPadding = PaddingValues(design.spacing.cardPadding)
+                                ) {
+                                    Column {
+                                        Text(step.title, style = styles.title2, color = p.textPrimary, modifier = Modifier.semantics { heading() })
+                                        if (!step.description.isNullOrBlank()) {
+                                            Spacer(Modifier.height(10.dp))
+                                            Text(step.description, style = styles.callout, color = p.textSecondary)
+                                            Spacer(Modifier.height(18.dp))
+                                            Text(currentLanguage.pick("Oración sugerida", "Suggested prayer", "Oração sugerida"), style = styles.footnote, color = p.textSecondary)
+                                        }
+                                        Spacer(Modifier.height(10.dp))
+                                        LiturgicalText(step.prayer)
+                                        if (!step.guidance.isNullOrBlank()) {
+                                            Spacer(Modifier.height(14.dp))
+                                            Text(step.guidance, style = styles.footnote, color = p.textSecondary)
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(16.dp))
+                        }
+                        Box(
+                            Modifier.fillMaxWidth().padding(top = 8.dp, bottom = bottomInset),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AppTransportBar(
+                                isPlaying = isNarrating,
+                                onPlayPause = {
+                                    if (isNarrating) ttsManager.stop()
+                                    else if (step != null) ttsManager.speakSingle(step.prayer, title = "$title · ${step.title}")
+                                },
+                                onPrevious = if (index > 0) ({ onSelect(index - 1) }) else null,
+                                onNext = if (index < total - 1) ({ onSelect(index + 1) }) else null,
+                                previousLabel = currentLanguage.pick("Anterior", "Previous", "Anterior"),
+                                nextLabel = currentLanguage.pick("Siguiente", "Next", "Seguinte"),
+                                playLabel = currentLanguage.pick("Escuchar", "Listen", "Ouvir"),
+                                pauseLabel = currentLanguage.pick("Detener", "Stop", "Parar"),
+                                tagPrefix = "${ttsTag}_transport",
+                                modifier = Modifier
+                                    .testTag(ttsTag)
+                                    .semantics {
+                                        stateDescription = if (isNarrating) currentLanguage.pick("Narrando", "Narrating", "Narrando")
+                                        else currentLanguage.pick("Detenido", "Stopped", "Parado")
+                                    }
+                            )
+                        }
+                    }
+                }
+            }
+        )
+        if (showReading) PrayerReadingSheet(currentLanguage) { showReading = false }
+        return
+    }
 
     LazyColumn(
         Modifier
