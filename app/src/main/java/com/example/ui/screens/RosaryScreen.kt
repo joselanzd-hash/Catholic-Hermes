@@ -1155,6 +1155,11 @@ fun RosaryScreen(
             .testTag("rosary_screen")
     ) {
         val wide = maxWidth >= 600.dp
+        // Landscape phone: lots of width, very little height. The existing `wide`
+        // branch also serves tablets in portrait, so it must NOT be redefined —
+        // this is an extra branch keyed on height as well as width.
+        val landscapeCompact = maxWidth >= 600.dp && maxHeight < 480.dp && maxHeight >= 340.dp
+        val railWidth = (maxWidth * 0.38f).coerceIn(280.dp, 360.dp)
         val compactReading = maxWidth < 360.dp || styles.caption.fontSize.value * LocalDensity.current.fontScale >= 18f
         val gutter = design.spacing.gutter
         val viewport = maxHeight
@@ -1193,7 +1198,7 @@ fun RosaryScreen(
                 inDecade = labelInDecade,
                 onPickMysteries = { sheet = RosarySheet.MYSTERIES },
                 onOpenMystery = { sheet = RosarySheet.MYSTERY },
-                compactMetadata = compactReading
+                compactMetadata = compactReading || landscapeCompact
             )
         }
         val progress: @Composable () -> Unit = {
@@ -1271,6 +1276,41 @@ fun RosaryScreen(
         val contentScroll = rememberScrollState()
         LaunchedEffect(selectedTab, selectedMysteryType, index) { contentScroll.scrollTo(0) }
         Row(Modifier.fillMaxSize()) {
+            if (landscapeCompact) {
+                // ---- Landscape phone -------------------------------------
+                // Left rail is FIXED: mystery art as ambience, devotion switch,
+                // compact label, then progress + beads anchored at the bottom.
+                // Nothing here scrolls, so the beads never move while praying.
+                Column(Modifier.width(railWidth).fillMaxHeight()) {
+                    Box(Modifier.fillMaxWidth().weight(1f)) {
+                        stage()
+                        Box(Modifier.padding(top = topInset + 6.dp)) { topBar() }
+                    }
+                    label()
+                    progress()
+                    reel()
+                    Box(Modifier.height(bottomInset + 8.dp))
+                }
+                // Right pane is reading ONLY. The single scroll keeps its tag and
+                // its semantics; the transport stays in the thumb zone.
+                Column(Modifier.weight(1f).fillMaxHeight()) {
+                    Column(
+                        Modifier.weight(1f).fillMaxWidth().verticalScroll(contentScroll)
+                            .testTag("prayer_content_scroll")
+                            .padding(top = topInset + 12.dp, bottom = 16.dp)
+                    ) { prayer() }
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .then(if (design.isSanctuary || design.isClassic || design.reduceTransparency || design.highContrast) Modifier.background(p.canvasBottom) else Modifier)
+                            .testTag("prayer_transport")
+                            .then(if (design.isSanctuary) Modifier.drawBehind {
+                                drawLine(p.separator, androidx.compose.ui.geometry.Offset.Zero,
+                                    androidx.compose.ui.geometry.Offset(size.width, 0f), 1.dp.toPx())
+                            } else Modifier)
+                            .padding(top = 8.dp, bottom = bottomInset + 10.dp)
+                    ) { transport() }
+                }
+            } else {
             if (wide) {
                 Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
                     Box(Modifier.fillMaxWidth().height((viewport * 0.55f).coerceAtLeast(180.dp))) {
@@ -1307,6 +1347,7 @@ fun RosaryScreen(
                         } else Modifier)
                         .padding(top = 8.dp, bottom = bottomInset + 10.dp)
                 ) { transport() }
+            }
             }
         }
     }

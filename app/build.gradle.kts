@@ -12,8 +12,8 @@ android {
     applicationId = "com.aistudio.sanctafides.qvmrpx"
     minSdk = 24
     targetSdk = 36
-    versionCode = 8
-    versionName = "1.7"
+    versionCode = 9
+    versionName = "1.8.27"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
