@@ -99,3 +99,35 @@ Para cada área, **dos sub-agentes distintos**:
   la app corriendo. Se declara expresamente en el informe; no se presenta como captura de la app.
 - **El modelo de los sub-agentes se satura (HTTP 429).** Si un sub-agente falla, el coordinador
   hace el trabajo a mano y lo anota.
+
+## 7. Estado verificado
+
+Compilación real: `./gradlew :app:assembleDebug` → **BUILD SUCCESSFUL**. APK verificado con
+`aapt2 dump badging`: `versionCode='9'`, `versionName='1.8.27'`. El `debug.keystore` se genera
+localmente con `keytool` y sigue ignorado por git.
+
+| Área | Rama landscape | Compila |
+|---|---|---|
+| Armazón / navegación (`LumenKit`) | dock → raíl lateral fijo | sí |
+| Rosario (`RosaryScreen`) | cuentas fijas izquierda, lectura derecha | sí |
+| Hoy (`HomeScreen`) | implementada por sub-agente | sí |
+| Biblia (`BibleScreen`) | maestro-detalle | sí |
+| Estudio bíblico (`ScriptureStudyScreen`) | maestro-detalle | sí |
+| Oraciones de la noche (`NightPrayersScreen`) | implementada por sub-agente | sí |
+| Orar · ficha de oración (`PrayerDetailView`) | arte+controles fijos izquierda, texto derecha | sí |
+| Catecismo, Santos, Más, Buscar, Mi camino, Vida espiritual | en curso (sub-agentes) | — |
+
+### Lecciones del bucle con el crítico
+
+- **Un objetivo táctil invisible no es un objetivo táctil.** El área de 44 dp existía con
+  `background: transparent`; el crítico la rechazó porque no se puede apuntar a lo que no se ve.
+  Los iconos llevan ahora superficie visible.
+- **Añadir márgenes fijos por tamaño empeora el reparto del alto.** La v4 dejó hasta el 25 % del
+  alto muerto. Se resuelve con columna flex y `space-between`, no con márgenes por resolución.
+- **La semántica del color importa:** el verde es éxito/acento; un icono de error en verde miente.
+  El gold es el token de advertencia.
+- **Un sub-agente puede escribir el cableado y no la implementación.** Uno llamó a composables que
+  nunca definió y dejó 30 errores que bloquearon el trabajo de los demás. Regla añadida al contexto
+  de todos: no llames a nada que no hayas escrito, y si no puedes terminar, revierte tu fichero.
+- **El coordinador verifica la compilación antes de integrar.** Sin build real, tres cuartas partes
+  del trabajo habrían parecido buenas sin serlo.
