@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -179,6 +180,12 @@ import com.example.ui.design.rememberFirstAsset
 import com.example.ui.design.rememberHeroMeta
 import com.example.ui.design.softShadow
 import com.example.ui.design.AppChevron
+import com.example.ui.design.CompactHeader
+import com.example.ui.design.LandscapeForm
+import com.example.ui.design.LandscapeMetrics
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
 import com.example.ui.theme.ReaderFontChoice
@@ -528,7 +535,25 @@ fun BibleScreen(
     }
     CompositionLocalProvider(LocalBibleEditionLabel provides editionLabel, LocalOpenBibleChooser provides openChooser) {
     ReadingTypography(settings) {
-        Box(modifier.fillMaxSize().testTag("bible_screen")) {
+        BoxWithConstraints(modifier.fillMaxSize().testTag("bible_screen")) {
+            // Landscape phone (844x390 · 915x412 · 740x360 dp): real master-detail,
+            // index fixed on the left, reading on the right. Same gate as the
+            // Rosary rail; the portrait and tablet paths below are untouched.
+            val landscapeCompact = maxWidth >= 600.dp && maxHeight < 480.dp && maxHeight >= 340.dp
+            // The host's segmented control without the illustrated header, for
+            // the fixed left pane of the landscape directory and study views.
+            val compactTabs: @Composable () -> Unit = {
+                AppSegmentedTabs(
+                    options = listOf(
+                        currentLanguage.pick("Biblia", "Bible", "Bíblia"),
+                        currentLanguage.pick("Misa", "Mass", "Missa"),
+                        currentLanguage.pick("Estudio", "Study", "Estudo")
+                    ),
+                    selectedIndex = when (selectedMainTab) { 1 -> 1; 3 -> 2; else -> 0 },
+                    onSelect = { selectedMainTab = if (it == 2) 3 else it },
+                    modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+                )
+            }
             val book = selectedBook
             when {
                 selectedMainTab == 2 -> VersionsView(
@@ -546,6 +571,7 @@ fun BibleScreen(
                     book = book,
                     chapterRequest = selectedChapterNumber,
                     currentLanguage = currentLanguage,
+                    landscapeCompact = landscapeCompact,
                     settings = settings,
                     onSettingsChange = updateSettings,
                     speech = speech,
@@ -617,6 +643,8 @@ fun BibleScreen(
                                 dao = dao,
                                 ttsManager = ttsManager,
                                 currentLanguage = currentLanguage,
+                                landscapeCompact = landscapeCompact,
+                                compactTabs = compactTabs,
                                 onOpenCatechism = onOpenCatechism,
                                 initialLessonId = studyResumeLesson ?: initialLessonId,
                                 onExitContext = onExitContext,
@@ -648,6 +676,9 @@ fun BibleScreen(
                             header = header,
                             repository = repository,
                             currentLanguage = currentLanguage,
+                            landscapeCompact = landscapeCompact,
+                            compactTabs = compactTabs,
+                            onOpenVersions = { selectedMainTab = 2 },
                             searchQuery = searchQuery,
                             onSearchQueryChange = { searchQuery = it },
                             selectedFilter = selectedFilter,
@@ -674,6 +705,9 @@ private fun BookDirectory(
     header: LazyListScope.() -> Unit,
     repository: CatholicDataRepository,
     currentLanguage: AppLanguage,
+    landscapeCompact: Boolean = false,
+    compactTabs: (@Composable () -> Unit)? = null,
+    onOpenVersions: () -> Unit = {},
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     selectedFilter: Int,
@@ -741,6 +775,244 @@ private fun BookDirectory(
 
     val chaptersLabel: (Int) -> String = { n -> currentLanguage.pick("$n capítulos", "$n chapters", "$n capítulos") }
     val deuteroLabel = currentLanguage.pick("Deuterocanónico", "Deuterocanonical", "Deuterocanônico")
+
+    if (landscapeCompact) {
+        // ---- Landscape phone: the directory as master-detail ----------------
+        // Left pane FIXED: compact header (44/52dp), the Biblia/Misa/Estudio
+        // switch, search and canon filter never scroll away; only the book
+        // index list scrolls, as navigation. Right pane: the invitation to
+        // continue reading and the verse search results, one content scroll.
+        val form = rememberLandscapeForm()
+        val canonOptions = listOf(
+            currentLanguage.pick("Todos los libros", "All books", "Todos os livros"),
+            currentLanguage.pick("Antiguo Testamento", "Old Testament", "Antigo Testamento"),
+            currentLanguage.pick("Nuevo Testamento", "New Testament", "Novo Testamento"),
+            currentLanguage.pick("Deuterocanónicos", "Deuterocanon", "Deuterocanônicos")
+        )
+        val selectedCanon = canonOptions.getOrElse(selectedFilter) { canonOptions.first() }
+        val insetsLandscape = appScreenInsets()
+        LandscapeTwoPane(
+            form = form,
+            leftWidthFraction = 0.34f,
+            left = {
+                PaneSurface(contentPadding = PaddingValues(0.dp)) {
+                    Column(Modifier.fillMaxSize().testTag("bible_landscape_index")) {
+                        CompactHeader(
+                            title = currentLanguage.pick("Sagrada Biblia", "Holy Bible", "Bíblia Sagrada"),
+                            form = form,
+                            actions = {
+                                Box(
+                                    Modifier.size(40.dp).lumenPress(onOpenVersions, 0.9f)
+                                        .semantics {
+                                            contentDescription = currentLanguage.pick(
+                                                "Versiones, traducciones y descargas",
+                                                "Versions, translations and downloads",
+                                                "Versões, traduções e downloads"
+                                            )
+                                        }
+                                        .testTag("bible_versions_row"),
+                                    contentAlignment = Alignment.Center
+                                ) { Icon(Icons.Outlined.Translate, null, tint = p.textPrimary, modifier = Modifier.size(20.dp)) }
+                            }
+                        )
+                        compactTabs?.invoke()
+                        AppSearchBar(
+                            value = searchQuery,
+                            onValueChange = onSearchQueryChange,
+                            placeholder = currentLanguage.pick(
+                                "Buscar libros y versículos",
+                                "Search books and verses",
+                                "Buscar livros e versículos"
+                            ),
+                            tag = "bible_search_input"
+                        )
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = LandscapeMetrics.panePadding).padding(top = 10.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                currentLanguage.pick("Libros", "Books", "Livros"),
+                                style = styles.subhead.copy(fontWeight = FontWeight.SemiBold),
+                                color = p.textPrimary,
+                                modifier = Modifier.weight(1f).semantics { heading() }
+                            )
+                            AppMenuChip(
+                                label = selectedCanon,
+                                items = canonOptions.mapIndexed { index, label ->
+                                    AppMenuItem(
+                                        label = label,
+                                        icon = if (index == selectedFilter) Icons.Outlined.CheckCircle else null,
+                                        selected = index == selectedFilter,
+                                        tag = "bible_canon_$index"
+                                    ) { onFilterChange(index) }
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = currentLanguage.pick("Filtrar libros", "Filter books", "Filtrar livros")
+                                    stateDescription = selectedCanon
+                                },
+                                tag = "bible_canon_filter"
+                            )
+                        }
+                        LazyColumn(
+                            Modifier.weight(1f).fillMaxWidth().testTag("bible_book_directory"),
+                            contentPadding = PaddingValues(bottom = 14.dp)
+                        ) {
+                            if (counts.loading || counts.failed || (matches.failed && query.length >= MinSearchLength)) {
+                                item(key = "bible_load_state") { ContentLoadNotice(currentLanguage, counts.failed || matches.failed) { if (counts.failed) counts.retry() else matches.retry() } }
+                            }
+                            if (filteredBooks.isEmpty() && !counts.loading && !counts.failed) {
+                                item(key = "bible_books_empty") {
+                                    Text(
+                                        currentLanguage.pick("Sin resultados", "Nothing found", "Sem resultados"),
+                                        style = styles.footnote, color = p.textSecondary,
+                                        modifier = Modifier.padding(horizontal = LandscapeMetrics.panePadding, vertical = 12.dp)
+                                    )
+                                }
+                            }
+                            val compactBookRow: LazyListScope.(List<BibleBook>) -> Unit = { books ->
+                                itemsIndexed(books, key = { _, b -> "book_${b.id}" }) { index, book ->
+                                    val chapters = chapterCounts[book.id] ?: book.chaptersCount
+                                    AppGroupedRow(
+                                        title = book.name.get(currentLanguage),
+                                        position = positionOf(index, books.size),
+                                        subtitle = if (book.isDeuterocanonical) deuteroLabel else null,
+                                        trailingText = chaptersLabel(chapters),
+                                        onClick = { onOpenBook(book, 1, null, null) },
+                                        tag = "book_item_${book.id}"
+                                    )
+                                }
+                            }
+                            if (searching) {
+                                compactBookRow(filteredBooks)
+                            } else {
+                                filteredBooks.groupBy { it.testament }.forEach { (testament, books) ->
+                                    item(key = "testament_${testament.name}") {
+                                        Text(
+                                            if (testament == Testament.OLD) currentLanguage.pick("Antiguo Testamento", "Old Testament", "Antigo Testamento")
+                                            else currentLanguage.pick("Nuevo Testamento", "New Testament", "Novo Testamento"),
+                                            style = styles.footnote, color = p.textSecondary,
+                                            modifier = Modifier.padding(start = LandscapeMetrics.panePadding + 4.dp, top = 10.dp, bottom = 4.dp)
+                                                .semantics { heading() }
+                                        )
+                                    }
+                                    compactBookRow(books)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize().testTag("bible_directory_detail"),
+                    contentPadding = PaddingValues(
+                        top = insetsLandscape.calculateTopPadding() + 8.dp,
+                        bottom = insetsLandscape.calculateBottomPadding() + 32.dp
+                    )
+                ) {
+                    if (!searching) {
+                        item(key = "bible_continue") {
+                            ContinueReadingCard(
+                                book = resume?.first ?: booksById["joh"],
+                                chapter = resume?.second ?: 1,
+                                chapterCount = resume?.first?.let { chapterCounts[it.id] } ?: chapterCounts["joh"] ?: 21,
+                                firstRun = resume == null,
+                                currentLanguage = currentLanguage,
+                                onOpen = { b, ch -> onOpenBook(b, ch, null, if (resume != null) resumeVerse else null) },
+                                onListen = { b, ch -> onListen(b, ch, if (resume != null) resumeVerse else null) }
+                            )
+                        }
+                        item(key = "bible_directory_edition") {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter).padding(top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    LocalBibleEditionLabel.current, style = styles.footnote, color = p.textSecondary,
+                                    modifier = Modifier.heightIn(min = 44.dp).wrapContentHeight(Alignment.CenterVertically)
+                                        .clickable(role = Role.Button, onClickLabel = currentLanguage.pick("Elegir Biblia", "Choose a Bible", "Escolher Bíblia"), onClick = LocalOpenBibleChooser.current)
+                                        .testTag("bible_active_edition")
+                                )
+                                Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null, tint = p.textSecondary, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                    if (versesLoading) {
+                        item(key = "bible_verses_loading") {
+                            Column(
+                                Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter + 18.dp)
+                                    .padding(top = 12.dp).testTag("bible_verses_loading")
+                            ) {
+                                LinearProgressIndicator(
+                                    modifier = Modifier.fillMaxWidth().height(2.dp).clip(RoundedCornerShape(percent = 50)),
+                                    color = p.textSecondary,
+                                    trackColor = p.separator
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    currentLanguage.pick("Buscando en la Biblia…", "Searching the Bible…", "Buscando na Bíblia…"),
+                                    style = styles.footnote, color = p.textSecondary
+                                )
+                            }
+                        }
+                    }
+                    if (verseMatches.isNotEmpty()) {
+                        item(key = "verses_header") {
+                            Text(
+                                currentLanguage.pick("Versículos", "Verses", "Versículos"),
+                                style = styles.title3,
+                                color = p.textPrimary,
+                                modifier = Modifier.padding(horizontal = design.spacing.gutter).padding(top = 20.dp, bottom = 10.dp)
+                                    .semantics { heading() }
+                            )
+                        }
+                        itemsIndexed(verseMatches, key = { _, m -> "verse_${m.first}_${m.second}_${m.third.number}" }) { index, (bookId, chapter, verse) ->
+                            val book = booksById[bookId] ?: return@itemsIndexed
+                            val text = verse.text.get(currentLanguage).let { if (it.length > 160) it.take(160).trimEnd() + "…" else it }
+                            VerseResultRow(
+                                citation = citationOf(book.name.get(currentLanguage), chapter, verse.number, currentLanguage),
+                                snippet = text,
+                                query = query,
+                                position = positionOf(index, verseMatches.size),
+                                onClick = { onOpenBook(book, chapter, verse.number, null) },
+                                tag = "bible_verse_result_$index"
+                            )
+                        }
+                        if (moreMatches) item(key = "bible_more_results") {
+                            Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                AppSecondaryCapsule(
+                                    label = if (versesLoading) currentLanguage.pick("Cargando…", "Loading…", "Carregando…") else currentLanguage.pick("Ver más versículos", "Load more verses", "Ver mais versículos"),
+                                    onClick = { if (!versesLoading) searchLimit += 20 },
+                                    tag = "bible_load_more_results"
+                                )
+                            }
+                        }
+                    }
+                    if (searching && filteredBooks.isEmpty() && verseMatches.isEmpty() && !versesLoading && !counts.loading && !counts.failed && !matches.failed) {
+                        item(key = "bible_empty") {
+                            AppEmptyState(
+                                title = currentLanguage.pick("Sin resultados", "Nothing found", "Sem resultados"),
+                                body = currentLanguage.pick(
+                                    "Ningún libro ni versículo coincide con «$searchQuery».",
+                                    "No book or verse matches “$searchQuery”.",
+                                    "Nenhum livro ou versículo corresponde a “$searchQuery”."
+                                ),
+                                icon = Icons.Outlined.SearchOff
+                            )
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                AppSecondaryCapsule(
+                                    label = currentLanguage.pick("Borrar la búsqueda", "Clear search", "Limpar a busca"),
+                                    onClick = { onSearchQueryChange("") },
+                                    tag = "bible_clear_search"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+        return
+    }
 
     LazyColumn(Modifier.fillMaxSize().testTag("bible_book_directory"), contentPadding = contentPadding) {
         header()
@@ -1137,6 +1409,7 @@ private fun ReaderHost(
     book: BibleBook,
     chapterRequest: Int,
     currentLanguage: AppLanguage,
+    landscapeCompact: Boolean = false,
     settings: ReaderSettings,
     onSettingsChange: (ReaderSettings) -> Unit,
     speech: SpeechQueue,
@@ -1185,6 +1458,8 @@ private fun ReaderHost(
     var verseForSheet by remember { mutableStateOf<BibleVerse?>(null) }
     var showChapters by remember { mutableStateOf(false) }
     var showText by remember { mutableStateOf(false) }
+    // Which index the fixed left pane shows in landscape: 0 chapters · 1 books.
+    var landscapeIndexTab by rememberSaveable { mutableIntStateOf(0) }
 
     AppHideTabBar(true)
     AppInlineTitle("${book.shortName(currentLanguage)} $chapterNumber")
@@ -1209,20 +1484,37 @@ private fun ReaderHost(
                 currentLanguage = currentLanguage,
                 speech = speech,
                 focusVerse = focusVerse,
-                selectedVerse = if (landscape) studyVerse else null,
+                selectedVerse = if (landscape && !landscapeCompact) studyVerse else null,
                 scrollVerse = scrollVerse,
                 previous = previous,
                 next = next,
                 onNavigate = onNavigate,
-                onChooseChapter = { showChapters = true },
+                onChooseChapter = { if (landscapeCompact) landscapeIndexTab = 0 else showChapters = true },
                 onOpenText = { showText = true },
-                onVerseClick = { if (landscape) onStudyVerse(it.number) else verseForSheet = it },
+                onVerseClick = { if (landscape && !landscapeCompact) onStudyVerse(it.number) else verseForSheet = it },
                 modifier = m
             )
         }
     }
 
-    if (landscape) {
+    if (landscapeCompact) {
+        // ---- Landscape phone: real master-detail ----------------------------
+        // The index (chapters of this book, or the whole canon) is a fixed left
+        // pane; the right pane is the unchanged ChapterReader, which owns the
+        // screen's only content scroll and every reader control and tag.
+        BibleReaderLandscape(
+            form = rememberLandscapeForm(),
+            book = book,
+            chapterNumber = chapterNumber,
+            chapterCount = chapterCount,
+            countOf = countOf,
+            currentLanguage = currentLanguage,
+            indexTab = landscapeIndexTab,
+            onIndexTab = { landscapeIndexTab = it },
+            onNavigate = onNavigate,
+            reader = reader
+        )
+    } else if (landscape) {
         // Turned on its side, the reader becomes a study: the text on the
         // left, the whole Bible's web of references on the right.
         Row(Modifier.fillMaxSize()) {
@@ -1280,6 +1572,150 @@ private fun ReaderHost(
             onDismiss = { showText = false }
         )
     }
+}
+
+/**
+ * The landscape-phone reader as real master-detail: a fixed left index (the
+ * book's chapters as a compact grid, or the whole canon under "Libros") and
+ * the unchanged [ChapterReader] on the right, which keeps the single content
+ * scroll, the glass reader bar and every existing test tag. The header is the
+ * shared 44/52dp [CompactHeader]; the index chrome never scrolls away — only
+ * the index list itself scrolls, as navigation (73 books / 150 chapters cannot
+ * fit 330dp of height). Tapping a chapter or book navigates the right pane in
+ * place; the reader bar's chapter button simply reveals this index.
+ */
+@Composable
+private fun BibleReaderLandscape(
+    form: LandscapeForm,
+    book: BibleBook,
+    chapterNumber: Int,
+    chapterCount: Int,
+    countOf: (String) -> Int,
+    currentLanguage: AppLanguage,
+    indexTab: Int,
+    onIndexTab: (Int) -> Unit,
+    onNavigate: (BibleBook, Int) -> Unit,
+    reader: @Composable (Modifier) -> Unit
+) {
+    val design = LocalAppDesign.current
+    val p = design.palette
+    val styles = LocalAppTextStyles.current
+    val books = BibleData.catholicCanonBooks.filter { countOf(it.id) > 0 }
+    val columns = 5
+    val chapterListState = rememberLazyListState()
+    val bookListState = rememberLazyListState()
+    // Keep the current chapter and book in view without moving the reading pane.
+    LaunchedEffect(book.id, chapterNumber) {
+        chapterListState.scrollToItem(((chapterNumber - 1) / columns).coerceAtLeast(0))
+    }
+    LaunchedEffect(book.id, indexTab) {
+        if (indexTab == 1) {
+            val target = books.indexOfFirst { it.id == book.id }
+            if (target >= 0) {
+                val headersBefore = books.take(target + 1).map { it.testament }.distinct().size
+                bookListState.scrollToItem(target + headersBefore)
+            }
+        }
+    }
+    LandscapeTwoPane(
+        form = form,
+        leftWidthFraction = 0.34f,
+        left = {
+            PaneSurface(contentPadding = PaddingValues(0.dp)) {
+                Column(Modifier.fillMaxSize().testTag("bible_landscape_index")) {
+                    CompactHeader(
+                        title = book.name.get(currentLanguage),
+                        form = form,
+                        subtitle = currentLanguage.pick(
+                            "Capítulo $chapterNumber de $chapterCount",
+                            "Chapter $chapterNumber of $chapterCount",
+                            "Capítulo $chapterNumber de $chapterCount"
+                        )
+                    )
+                    AppSegmentedTabs(
+                        options = listOf(
+                            currentLanguage.pick("Capítulos", "Chapters", "Capítulos"),
+                            currentLanguage.pick("Libros", "Books", "Livros")
+                        ),
+                        selectedIndex = indexTab,
+                        onSelect = onIndexTab,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    if (indexTab == 0) {
+                        LazyColumn(
+                            state = chapterListState,
+                            modifier = Modifier.weight(1f).fillMaxWidth().testTag("bible_landscape_chapters"),
+                            contentPadding = PaddingValues(start = LandscapeMetrics.panePadding, end = LandscapeMetrics.panePadding, bottom = 14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items((1..chapterCount).chunked(columns), key = { it.first() }) { row ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    row.forEach { n ->
+                                        val current = n == chapterNumber
+                                        Box(
+                                            Modifier
+                                                .weight(1f)
+                                                .height(LandscapeMetrics.touchTarget)
+                                                .then(
+                                                    if (current) Modifier.clip(CircleShape).background(p.action)
+                                                    else Modifier.lumenGlass(CircleShape, lifted = false)
+                                                )
+                                                .clip(CircleShape)
+                                                .clickable(role = Role.Button) { onNavigate(book, n) }
+                                                .semantics {
+                                                    contentDescription = currentLanguage.pick("Capítulo $n", "Chapter $n", "Capítulo $n")
+                                                    selected = current
+                                                }
+                                                .testTag("chapter_cell_$n"),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                "$n",
+                                                style = styles.subhead.copy(fontWeight = if (current) FontWeight.SemiBold else FontWeight.Medium),
+                                                color = if (current) p.onAction else p.textPrimary
+                                            )
+                                        }
+                                    }
+                                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                                }
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            state = bookListState,
+                            modifier = Modifier.weight(1f).fillMaxWidth().testTag("bible_landscape_books"),
+                            contentPadding = PaddingValues(bottom = 14.dp)
+                        ) {
+                            books.groupBy { it.testament }.forEach { (testament, list) ->
+                                item(key = "t_${testament.name}") {
+                                    Text(
+                                        if (testament == Testament.OLD) currentLanguage.pick("Antiguo Testamento", "Old Testament", "Antigo Testamento")
+                                        else currentLanguage.pick("Nuevo Testamento", "New Testament", "Novo Testamento"),
+                                        style = styles.footnote, color = p.textSecondary,
+                                        modifier = Modifier.padding(start = LandscapeMetrics.panePadding + 4.dp, top = 8.dp, bottom = 4.dp)
+                                            .semantics { heading() }
+                                    )
+                                }
+                                itemsIndexed(list, key = { _, b -> "b_${b.id}" }) { _, b ->
+                                    AppListRow(
+                                        title = b.name.get(currentLanguage),
+                                        trailingText = "${countOf(b.id)}",
+                                        selected = b.id == book.id,
+                                        onClick = {
+                                            onNavigate(b, 1)
+                                            onIndexTab(0)
+                                        },
+                                        modifier = Modifier.testTag("sheet_book_${b.id}")
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        right = { reader(Modifier.fillMaxSize()) }
+    )
 }
 
 @Composable

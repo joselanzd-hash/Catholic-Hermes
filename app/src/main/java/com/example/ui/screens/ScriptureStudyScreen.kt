@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -94,11 +95,15 @@ import com.example.ui.design.AppProgressBar
 import com.example.ui.design.AppProgressRing
 import com.example.ui.design.AppSecondaryCapsule
 import com.example.ui.design.AppSheet
+import com.example.ui.design.CompactHeader
 import com.example.ui.design.GroupPosition
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
 import com.example.ui.design.appScreenInsets
 import com.example.ui.design.groupedItem
 import com.example.ui.design.lumenGlass
 import com.example.ui.design.lumenPress
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
 import com.example.data.persistence.PersonalDataCommands
@@ -130,6 +135,10 @@ fun ScriptureStudyScreen(
     ttsManager: LiturgicalTtsManager,
     currentLanguage: AppLanguage,
     modifier: Modifier = Modifier,
+    /** Landscape phone: fixed lesson index on the left, reading on the right. */
+    landscapeCompact: Boolean = false,
+    /** The host's Biblia/Misa/Estudio switch without the illustrated header. */
+    compactTabs: (@Composable () -> Unit)? = null,
     /** The host screen's title and view switcher, set as the first rows. */
     header: LazyListScope.() -> Unit = {},
     onOpenCatechism: ((Int) -> Unit)? = null,
@@ -177,6 +186,29 @@ fun ScriptureStudyScreen(
         val currentTrack = tracks.getOrElse(selectedTrackIndex) { tracks.first() }
         val lesson = activeLessonId?.let { id -> tracks.flatMap { it.lessons }.firstOrNull { it.id == id } }
         if (lesson == null) {
+            if (landscapeCompact) {
+                // Landscape phone: track picker + lesson index fixed on the
+                // left; the track's presentation reads on the right.
+                StudyLandscapeScaffold(
+                    tracks = tracks,
+                    currentTrack = currentTrack,
+                    selectedTrackIndex = selectedTrackIndex,
+                    completedLessonIds = completedLessonIds,
+                    currentLanguage = currentLanguage,
+                    compactTabs = compactTabs,
+                    activeLessonId = null,
+                    onSelectTrack = { selectedTrackIndex = it },
+                    onSelectLesson = { activeLessonId = it.id },
+                    right = {
+                        StudyTrackReading(
+                            track = currentTrack,
+                            completedLessonIds = completedLessonIds,
+                            currentLanguage = currentLanguage,
+                            onSelectLesson = { activeLessonId = it.id }
+                        )
+                    }
+                )
+            } else {
             TrackOverviewView(
                 header = header,
                 tracks = tracks,
@@ -188,6 +220,7 @@ fun ScriptureStudyScreen(
                 onSelectTrack = { selectedTrackIndex = it },
                 onSelectLesson = { activeLessonId = it.id }
             )
+            }
         } else {
             val passage = rememberIoContent(listOf(repository, lesson.id, currentLanguage)) { repository.studyScriptureText(lesson, currentLanguage) }
             val isLessonDone = completedLessonIds.contains(lesson.id)
@@ -199,6 +232,7 @@ fun ScriptureStudyScreen(
                     activeLessonId = null
                 }
             }
+            val lessonDetail: @Composable () -> Unit = {
             lessonState.SaveableStateProvider(lesson.id) {
             LessonDetailView(
                 repository = repository,
@@ -229,6 +263,25 @@ fun ScriptureStudyScreen(
                     }
                 }
             )
+            }
+            }
+            if (landscapeCompact) {
+                // Landscape phone: the lesson reads on the right (its own
+                // single scroll, all tags intact); the index stays on the left.
+                StudyLandscapeScaffold(
+                    tracks = tracks,
+                    currentTrack = currentTrack,
+                    selectedTrackIndex = selectedTrackIndex,
+                    completedLessonIds = completedLessonIds,
+                    currentLanguage = currentLanguage,
+                    compactTabs = compactTabs,
+                    activeLessonId = lesson.id,
+                    onSelectTrack = { selectedTrackIndex = it },
+                    onSelectLesson = { activeLessonId = it.id },
+                    right = lessonDetail
+                )
+            } else {
+                lessonDetail()
             }
         }
     }
@@ -435,6 +488,7 @@ private fun LessonRow(
     done: Boolean,
     position: GroupPosition,
     currentLanguage: AppLanguage,
+    selected: Boolean = false,
     onClick: () -> Unit
 ) {
     val design = LocalAppDesign.current
@@ -451,17 +505,20 @@ private fun LessonRow(
         ) {
             Box(
                 Modifier.size(32.dp).then(
-                    if (done) Modifier.clip(CircleShape).background(p.success)
-                    else Modifier.lumenGlass(CircleShape, strong = true, lifted = false)
+                    when {
+                        done -> Modifier.clip(CircleShape).background(p.success)
+                        selected -> Modifier.clip(CircleShape).background(p.action)
+                        else -> Modifier.lumenGlass(CircleShape, strong = true, lifted = false)
+                    }
                 ),
                 contentAlignment = Alignment.Center
             ) {
                 if (done) Icon(Icons.Filled.Check, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(18.dp))
-                else Text("${lesson.lessonNumber}", style = styles.subhead.copy(fontWeight = FontWeight.Medium), color = p.textPrimary)
+                else Text("${lesson.lessonNumber}", style = styles.subhead.copy(fontWeight = FontWeight.Medium), color = if (selected) p.onAction else p.textPrimary)
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(lesson.title.get(currentLanguage), style = styles.body, color = p.textPrimary)
+                Text(lesson.title.get(currentLanguage), style = styles.body, color = if (selected) p.accent else p.textPrimary)
                 Spacer(Modifier.height(2.dp))
                 Text(lesson.biblicalReference, style = styles.footnote, color = p.textSecondary)
             }
@@ -867,4 +924,192 @@ private fun NotesField(
             }
         }
     )
+}
+
+// ------------------------------------------------------------- landscape form
+
+/**
+ * The study area on a landscape phone as real master-detail. Left pane FIXED:
+ * the shared 44/52dp compact header, the host's Biblia/Misa/Estudio switch, a
+ * one-line itinerary picker and the lesson index — the chrome never scrolls
+ * away, only the lesson list scrolls, as navigation. Right pane: the track's
+ * presentation or the unchanged [LessonDetailView], the screen's only content
+ * scroll, with every existing test tag intact.
+ */
+@Composable
+private fun StudyLandscapeScaffold(
+    tracks: List<ScriptureCourseTrack>,
+    currentTrack: ScriptureCourseTrack,
+    selectedTrackIndex: Int,
+    completedLessonIds: Set<String>,
+    currentLanguage: AppLanguage,
+    compactTabs: (@Composable () -> Unit)?,
+    activeLessonId: String?,
+    onSelectTrack: (Int) -> Unit,
+    onSelectLesson: (ScriptureLesson) -> Unit,
+    right: @Composable () -> Unit
+) {
+    val form = rememberLandscapeForm()
+    val p = LocalAppDesign.current.palette
+    val styles = LocalAppTextStyles.current
+    val capsule = RoundedCornerShape(percent = 50)
+    val listState = rememberLazyListState()
+    // Keep the lesson being read in view in the index.
+    LaunchedEffect(activeLessonId, currentTrack.id) {
+        val i = currentTrack.lessons.indexOfFirst { it.id == activeLessonId }
+        if (i >= 0) listState.scrollToItem(i)
+    }
+    LandscapeTwoPane(
+        form = form,
+        leftWidthFraction = 0.34f,
+        left = {
+            PaneSurface(contentPadding = PaddingValues(0.dp)) {
+                Column(Modifier.fillMaxSize().testTag("study_landscape_index")) {
+                    CompactHeader(title = currentTrack.title.get(currentLanguage), form = form)
+                    compactTabs?.invoke()
+                    LazyRow(
+                        Modifier.fillMaxWidth().testTag("study_track_picker"),
+                        contentPadding = PaddingValues(horizontal = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(tracks, key = { _, t -> t.id }) { index, candidate ->
+                            val read = candidate.lessons.count { completedLessonIds.contains(it.id) }
+                            val selected = index == selectedTrackIndex
+                            Row(
+                                Modifier
+                                    .height(44.dp)
+                                    .lumenPress({ onSelectTrack(index) }, 0.97f, Role.Tab)
+                                    .lumenGlass(capsule, strong = selected)
+                                    .then(if (selected) Modifier.border(1.dp, p.textPrimary, capsule) else Modifier)
+                                    .semantics { this.selected = selected }
+                                    .testTag("track_row_${candidate.id}")
+                                    .padding(horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(trackIcon(candidate), null, tint = p.textPrimary, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    candidate.title.get(currentLanguage),
+                                    style = styles.footnote.copy(fontWeight = FontWeight.Medium),
+                                    color = p.textPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.widthIn(max = 150.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("$read/${candidate.lessons.size}", style = styles.caption, color = p.textSecondary)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f).fillMaxWidth().testTag("study_lesson_index"),
+                        contentPadding = PaddingValues(start = 6.dp, end = 6.dp, bottom = 14.dp)
+                    ) {
+                        itemsIndexed(currentTrack.lessons, key = { _, l -> "lesson_${l.id}" }) { index, lesson ->
+                            LessonRow(
+                                lesson = lesson,
+                                done = completedLessonIds.contains(lesson.id),
+                                position = positionOf(index, currentTrack.lessons.size),
+                                currentLanguage = currentLanguage,
+                                selected = lesson.id == activeLessonId,
+                                onClick = { onSelectLesson(lesson) }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        right = right
+    )
+}
+
+/**
+ * The track's presentation at reading measure, for the landscape right pane:
+ * what the course is, what it teaches, how far it has been read and the one
+ * button that begins or continues it. The lessons themselves live in the
+ * fixed left index, so they are not repeated here.
+ */
+@Composable
+private fun StudyTrackReading(
+    track: ScriptureCourseTrack,
+    completedLessonIds: Set<String>,
+    currentLanguage: AppLanguage,
+    onSelectLesson: (ScriptureLesson) -> Unit
+) {
+    val design = LocalAppDesign.current
+    val p = design.palette
+    val styles = LocalAppTextStyles.current
+    val insets = appScreenInsets()
+    val total = track.lessons.size
+    val done = track.lessons.count { completedLessonIds.contains(it.id) }
+    val fraction = if (total > 0) done.toFloat() / total.toFloat() else 0f
+    val progressSummary = currentLanguage.pick(
+        "$done de $total lecciones · ${(fraction * 100).toInt()} % del curso",
+        "$done of $total lessons · ${(fraction * 100).toInt()}% of the course",
+        "$done de $total lições · ${(fraction * 100).toInt()} % do curso"
+    )
+    val nextLesson = track.lessons.firstOrNull { !completedLessonIds.contains(it.id) }
+    LazyColumn(
+        Modifier.fillMaxSize().testTag("study_overview_page"),
+        contentPadding = PaddingValues(top = insets.calculateTopPadding() + 8.dp, bottom = insets.calculateBottomPadding() + 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        item(key = "study_track_head") {
+            Column(
+                Modifier.widthIn(max = design.spacing.readingMaxWidth).fillMaxWidth()
+                    .padding(horizontal = design.spacing.gutter)
+            ) {
+                Text(track.title.get(currentLanguage), style = styles.title2, color = p.textPrimary, modifier = Modifier.semantics { heading() })
+                Spacer(Modifier.height(8.dp))
+                Text(track.description.get(currentLanguage), style = styles.callout, color = p.textSecondary)
+                Spacer(Modifier.height(12.dp))
+                val level = when (track.level) {
+                    StudyCourseLevel.FOUNDATION -> currentLanguage.pick("Fundamentos · sin conocimientos previos", "Foundations · no prior knowledge required", "Fundamentos · sem conhecimentos prévios")
+                    StudyCourseLevel.INTERMEDIATE -> currentLanguage.pick("Profundización", "Further study", "Aprofundamento")
+                    StudyCourseLevel.UNSPECIFIED -> currentLanguage.pick("Aplicación bíblica y vida cristiana", "Biblical application and Christian life", "Aplicação bíblica e vida cristã")
+                }
+                Text(listOfNotNull(level, track.estimatedMinutes?.let { currentLanguage.pick("$it min orientativos", "About $it min", "$it min sugeridos") }).joinToString(" · "), style = styles.footnote, color = p.textSecondary)
+                if (track.objectives.isNotEmpty()) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(currentLanguage.pick("Qué aprenderás", "What you will learn", "O que vai aprender"), style = styles.headline, color = p.textPrimary)
+                    track.objectives.forEach { objective ->
+                        Text("• ${objective.get(currentLanguage)}", style = styles.callout, color = p.textPrimary, modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
+                Spacer(Modifier.height(20.dp))
+                AppProgressBar(
+                    progress = fraction,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics {
+                            contentDescription = track.title.get(currentLanguage)
+                            stateDescription = progressSummary
+                        }
+                        .testTag("study_course_progress"),
+                    height = 4.dp
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(progressSummary, style = styles.footnote, color = p.textSecondary)
+                if (track.lessons.isNotEmpty()) {
+                    Spacer(Modifier.height(18.dp))
+                    AppPrimaryCapsule(
+                        label = when {
+                            done == 0 -> currentLanguage.pick("Empezar el itinerario", "Begin the course", "Começar o itinerário")
+                            nextLesson != null -> currentLanguage.pick(
+                                "Continuar · Lección ${nextLesson.lessonNumber}",
+                                "Continue · Lesson ${nextLesson.lessonNumber}",
+                                "Continuar · Lição ${nextLesson.lessonNumber}"
+                            )
+                            else -> currentLanguage.pick("Repasar el itinerario", "Review the course", "Rever o itinerário")
+                        },
+                        onClick = { onSelectLesson(nextLesson ?: track.lessons.first()) },
+                        icon = Icons.Filled.PlayArrow,
+                        tag = "study_continue_button"
+                    )
+                }
+            }
+        }
+    }
 }

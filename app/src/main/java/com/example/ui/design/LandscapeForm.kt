@@ -75,6 +75,15 @@ data class LandscapeForm(
 
     /** Gutter shrinks in landscape so the panes get the width back. */
     val gutter: Dp get() = if (isLandscape) 12.dp else 20.dp
+
+    /**
+     * The landscape-phone branch shared by the redesigned areas (the Rosary
+     * precedent): wide enough for two panes, short enough that the portrait
+     * column cannot work, tall enough to still read (844x390, 915x412, 740x360).
+     * Tablets in landscape (height >= 480) keep the portrait/tablet path.
+     */
+    val isCompactPhone: Boolean
+        get() = widthDp >= 600.dp && heightDp < 480.dp && heightDp >= 340.dp
 }
 
 @Composable
