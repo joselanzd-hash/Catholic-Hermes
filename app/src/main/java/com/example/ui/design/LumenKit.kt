@@ -26,8 +26,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -124,6 +126,10 @@ object LumenKit : AppKit {
         val chrome = remember { ChromeState() }
         val navInset = androidx.compose.foundation.layout.WindowInsets.navigationBars
             .asPaddingValues().calculateBottomPadding()
+        // Landscape phone: navigation moves to a fixed left rail so the dock
+        // stops eating a fifth of the height. Portrait and tablets keep the dock.
+        val landscapeForm = rememberLandscapeForm()
+        val railMode = landscapeForm.isLandscape && landscapeForm.heightDp < 500.dp
 
         // Scroll-edge behaviour: at rest the bar is invisible and the large
         // title in the content is the title; once content scrolls under it,
@@ -157,20 +163,24 @@ object LumenKit : AppKit {
                     containerColor = Color.Transparent,
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     bottomBar = {
-                        androidx.compose.animation.AnimatedVisibility(
+                        if (!railMode) androidx.compose.animation.AnimatedVisibility(
                             visible = !chrome.dockHidden,
                             enter = if (design.reduceMotion) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.slideInVertically(tween(design.motion.mediumMillis)) { it } + androidx.compose.animation.fadeIn(tween(design.motion.fastMillis)),
                             exit = if (design.reduceMotion) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.slideOutVertically(tween(design.motion.mediumMillis)) { it } + androidx.compose.animation.fadeOut(tween(design.motion.fastMillis))
                         ) { Dock(navItems, selectedNavIndex, onNavSelected) }
                     }
                 ) { padding ->
-                    val bottom = if (chrome.dockHidden) navInset else padding.calculateBottomPadding().coerceAtLeast(navInset)
+                    val bottom = if (railMode) navInset
+                        else if (chrome.dockHidden) navInset
+                        else padding.calculateBottomPadding().coerceAtLeast(navInset)
                     if (chrome.dockInset != bottom) chrome.dockInset = bottom
                     val inner = PaddingValues(
                         top = statusTop + if (effectiveBack != null) BarRow else 8.dp,
                         bottom = bottom
                     )
-                    Box(Modifier.fillMaxSize()) {
+                    Row(Modifier.fillMaxSize()) {
+                    if (railMode) LandscapeNavRail(navItems, selectedNavIndex, onNavSelected)
+                    Box(Modifier.weight(1f).fillMaxHeight()) {
                         // The ambient light and everything that scrolls are one
                         // recorded layer: the floating glass above samples it.
                         // Glass inside the content must never sample itself.
@@ -331,9 +341,84 @@ object LumenKit : AppKit {
                             )
                         }
                     }
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * Landscape phone: the floating dock becomes a fixed left rail.
+     *
+     * A bottom dock costs ~80dp out of a 390dp-tall screen — a fifth of the
+     * height, which is the scarce resource when the phone is on its side.
+     * Moving it to the side gives that height back to every screen at once,
+     * and the width it costs is the resource we have in surplus.
+     */
+    @Composable
+    private fun LandscapeNavRail(
+        navItems: List<AppNavItem>,
+        selectedNavIndex: Int,
+        onNavSelected: (Int) -> Unit
+    ) {
+        val design = LocalAppDesign.current
+        val palette = design.palette
+        val styles = LocalAppTextStyles.current
+        val top = statusBarHeight()
+        val navInset = androidx.compose.foundation.layout.WindowInsets.navigationBars
+            .asPaddingValues().calculateBottomPadding()
+        Column(
+            Modifier
+                .fillMaxHeight()
+                .width(LandscapeMetrics.railWidth)
+                .background(palette.canvasTop.copy(alpha = 0.55f))
+                .padding(top = top + 4.dp, bottom = navInset + 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                navItems.forEachIndexed { i, item ->
+                    val on = i == selectedNavIndex
+                    Column(
+                        Modifier
+                            .width(64.dp)
+                            .heightIn(min = LandscapeMetrics.railItemHeight)
+                            .clip(RoundedCornerShape(16.dp))
+                            .then(if (on) Modifier.background(palette.accentMuted) else Modifier)
+                            .lumenPress(onClick = { onNavSelected(i) })
+                            .padding(vertical = 6.dp, horizontal = 2.dp)
+                            .testTag(item.tag),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        androidx.compose.material3.Icon(
+                            imageVector = if (on) item.selectedIcon else item.icon,
+                            contentDescription = item.label,
+                            tint = if (on) palette.accent else palette.textSecondary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            text = item.label,
+                            style = styles.caption,
+                            color = if (on) palette.accent else palette.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .width(0.5.dp)
+                .background(palette.separator)
+        )
     }
 
     /** Four primary destinations. Captions reflow and always retain their type size. */
