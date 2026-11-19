@@ -109,13 +109,38 @@ localmente con `keytool` y sigue ignorado por git.
 | Área | Rama landscape | Compila |
 |---|---|---|
 | Armazón / navegación (`LumenKit`) | dock → raíl lateral fijo | sí |
-| Rosario (`RosaryScreen`) | cuentas fijas izquierda, lectura derecha | sí |
+| Rosario (`RosaryScreen`) | cuentas fijas izquierda, lectura derecha | sí · **crítico APROBADO** |
 | Hoy (`HomeScreen`) | implementada por sub-agente | sí |
 | Biblia (`BibleScreen`) | maestro-detalle | sí |
 | Estudio bíblico (`ScriptureStudyScreen`) | maestro-detalle | sí |
 | Oraciones de la noche (`NightPrayersScreen`) | implementada por sub-agente | sí |
 | Orar · ficha de oración (`PrayerDetailView`) | arte+controles fijos izquierda, texto derecha | sí |
-| Catecismo, Santos, Más, Buscar, Mi camino, Vida espiritual | en curso (sub-agentes) | — |
+| Planes de lectura (`ReadingPlansScreen`) | estado del plan fijo, lecturas y navegación anclada | sí |
+| Santos (`SaintsScreen`) | índice y filtros fijos, ficha con miniatura | sí · crítico en 2ª vuelta |
+| Más (`MoreScreen`) | héroe 232→44 dp, secciones en rejilla 2-3 col | sí |
+| Buscar (`SearchScreen`) | campo fijo que sobrevive al teclado, `imePadding` | sí |
+| Catecismo (`CatechismScreen`) | índice fijo, artículo a la derecha | sí |
+| Mi camino (`MyPathScreen`) | resumen fijo, historial a la derecha | sí |
+| Vida espiritual (`SpiritualLifeScreen`) | resumen fijo, detalle a la derecha | sí |
+| Hábitos y virtudes (`HabitsAndVirtuesScreen`) | anillo 216→96-112 dp, checklist a la derecha | sí |
+| Recordatorios (`RemindersScreen`) | formulario y Guardar sobre el teclado, rueda 200→120 dp | sí |
+| Avisos (`NoticeSettings`) | rejilla 2 col, editores en panel | sí |
+| Devociones (`DevotionsExplorerScreen`) | rejilla 2-3 col; detalle en dos paneles | sí |
+| Doctrina e historia (`DoctrineAndHistoryScreen`) | cabecera compacta (beneficia a 6 roots) | sí |
+| Parroquias (`ParishFinderScreen`) | dos paneles sin scroll | sí |
+| Guía del principiante (`BeginnerJourneyScreen`) | índice de pasos fijo, lectura y acción anclada | sí |
+| Peregrinación (`PilgrimageAndHabitsScreen`) | calendario/tabs fijos, rejilla; santuario en dos paneles | sí |
+
+**20 pantallas** con rama landscape. `assembleDebug` → **BUILD SUCCESSFUL**; APK verificado con
+`aapt2 dump badging`: `versionCode='9'`, `versionName='1.8.27'`.
+
+### El defecto sistemático
+
+Casi todas las fichas de detalle usaban `AppDetailHeader` / `AppHeroHeader` con arte de
+**200–300 dp**. En vertical es elegante; en un teléfono tumbado de 390 dp de alto **se come la
+pantalla entera** antes de mostrar el contenido. La corrección es la misma en todas: arte a
+78–128 dp en un panel izquierdo fijo, contenido a la derecha con el único scroll, y los controles
+anclados abajo. El barrido se hizo con `grep` sobre los ficheros, no pantalla a pantalla.
 
 ### Lecciones del bucle con el crítico
 
