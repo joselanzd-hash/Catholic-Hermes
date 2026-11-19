@@ -1,11 +1,14 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
-<title>Santos &middot; landscape v1</title>
+<title>Santos &middot; landscape v2</title>
 <link rel="stylesheet" href="lumen.css">
 <style>
+/* v2: canvas plano, el token exacto (el gradiente sutil estaba fuera de token) */
+.phone { background: var(--canvas); }
 .pane.index { flex: 0 0 40%; }
 .hdr { height: 52px; padding: 8px 16px; display: flex; align-items: center; }
-.hdr h1 { font-size: 17px; font-weight: 600; margin: 0; color: var(--text-1); }
+/* v2: el titulo del area tiene rango propio, no el cuerpo de las filas */
+.hdr h1 { font-size: 21px; font-weight: 600; margin: 0; color: var(--text-1); }
 .filters { padding: 0 16px 10px; display: flex; flex-direction: column; gap: 8px; }
 .search { height: 48px; border-radius: 999px; background: var(--raised);
           border: 1px solid var(--hairline); display: flex; align-items: center;
@@ -13,9 +16,11 @@
 .search .mag { color: var(--text-3); font-size: 15px; }
 .search .ph { color: var(--text-3); font-size: 14px; }
 .chips { display: flex; gap: 6px; }
-.chip { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px;
+/* v2 / bloqueante 1: TODOS los chips a 44dp, no solo el activo (37 vs 44) */
+.chip { height: 44px; min-height: 44px; box-sizing: border-box;
+        display: inline-flex; align-items: center; padding: 0 14px;
         border-radius: 999px; background: var(--selection); color: var(--text-2);
-        font-size: 13px; font-weight: 600; }
+        font-size: 13px; font-weight: 600; line-height: 1; }
 .chip.on { background: var(--accent-muted); color: var(--accent); }
 .pane-body.scroll { overflow: hidden; padding: 0 12px 16px; }
 .mes { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--text-2);
@@ -23,9 +28,12 @@
 .srow { min-height: 52px; display: flex; align-items: center; gap: 10px;
         padding: 6px 10px; border-radius: 14px; }
 .srow.sel { background: var(--accent-muted); }
-.srow .dnum { width: 24px; font-size: 13px; font-weight: 700; color: var(--text-2); }
+.srow .dnum { width: 24px; flex: 0 0 24px; font-size: 13px; font-weight: 700; color: var(--text-2); }
 .srow.sel .dnum { color: var(--accent); }
-.srow .sname { flex: 1; font-size: 14px; color: var(--text-1); }
+/* v2 / bloqueante 3: nombre largo, ellipsis de una linea en el indice */
+.srow .sname { flex: 1; min-width: 0; font-size: 14px; color: var(--text-1);
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srow.sel .sname { font-weight: 600; }
 .srow .chev { color: var(--text-3); font-size: 16px; }
 .fixed-top { display: flex; align-items: center; gap: 8px; padding: 8px 16px; }
 .cap { min-height: 44px; display: inline-flex; align-items: center; padding: 0 16px;
@@ -36,17 +44,41 @@
 .saint-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
 .thumb { width: 128px; height: 88px; flex: 0 0 128px; border-radius: 18px;
          background: linear-gradient(160deg, var(--selection), var(--accent-muted)); }
-.saint-id h2 { font-size: 20px; line-height: 1.25; margin: 0 0 4px; color: var(--text-1); }
+/* v2 / bloqueante 3: el titulo hace wrap, no se corta (max 3 lineas) */
+.saint-id { min-width: 0; }
+.saint-id h2 { font-size: 20px; line-height: 1.25; margin: 0 0 4px; color: var(--text-1);
+               display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+               overflow: hidden; }
 .meta { font-size: 12px; color: var(--text-2); line-height: 1.35; }
 .cred { margin-top: 3px; }
 .reading { max-width: 640px; font-size: 16px; line-height: 1.6; color: var(--text-1); }
 .card.grp { margin-top: 12px; padding: 12px 16px; border-radius: var(--r-group);
             background: var(--grouped); border: 1px solid var(--hairline); }
 .card.grp .body { font-size: 14px; color: var(--text-1); margin-top: 3px; }
+/* v2: affordance de scroll en la ficha, para que se vea que sigue */
+.pane.read .pane-body { position: relative; }
+.scroll-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 28px;
+               background: linear-gradient(180deg, transparent, var(--canvas)); pointer-events: none; }
 .phone.w740 .thumb { width: 104px; height: 76px; flex: 0 0 104px; }
 .phone.w740 .hdr { height: 44px; }
+.phone.w740 .hdr h1 { font-size: 19px; }
 .phone.w740 .saint-id h2 { font-size: 18px; }
 .phone.w740 .reading { font-size: 15px; }
+
+/* ===== anexo de estados ===== */
+.states { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; }
+.state-box { width: 460px; }
+.state-cap { color: #E8EAF2; font-size: 12px; font-weight: 600; margin: 0 0 6px 2px;
+             letter-spacing: .04em; text-transform: uppercase; }
+.state-phone { width: 460px; height: 240px; }
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center;
+         height: 100%; gap: 8px; text-align: center; padding: 0 24px; }
+.empty .g { font-size: 26px; color: var(--text-3); }
+.empty .t { font-size: 15px; font-weight: 600; color: var(--text-1); }
+.expand { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
+          border-radius: 999px; border: 1px solid var(--accent); background: transparent;
+          color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer;
+          font-family: inherit; margin-top: 6px; }
 </style>
 </head><body>
 <div class="phone w844" data-theme="light">
@@ -66,16 +98,16 @@
         <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
       </div>
       <div class="pane-body scroll">
-        <div class="mes">ENERO</div>
-        <div class="srow"><span class="dnum">1</span><span class="sname">María, Madre de Dios</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">2</span><span class="sname">Basilio Magno y Gregorio</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">3</span><span class="sname">Santísimo Nombre de Jesús</span><span class="chev">&rsaquo;</span></div>
         <div class="mes">FEBRERO</div>
         <div class="srow"><span class="dnum">2</span><span class="sname">Presentación del Señor</span><span class="chev">&rsaquo;</span></div>
         <div class="srow"><span class="dnum">3</span><span class="sname">Blas de Sebaste</span><span class="chev">&rsaquo;</span></div>
         <div class="srow sel"><span class="dnum">5</span><span class="sname">Águeda de Catania</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros, mártires del Japón</span><span class="chev">&rsaquo;</span></div>
         <div class="srow"><span class="dnum">11</span><span class="sname">Nuestra Señora de Lourdes</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">14</span><span class="sname">Cirilo y Metodio, patronos de Europa</span><span class="chev">&rsaquo;</span></div>
+        <div class="mes">MARZO</div>
+        <div class="srow"><span class="dnum">7</span><span class="sname">Perpetua y Felicidad</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">19</span><span class="sname">San José, esposo de María</span><span class="chev">&rsaquo;</span></div>
       </div>
     </div>
 
@@ -129,16 +161,16 @@
         <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
       </div>
       <div class="pane-body scroll">
-        <div class="mes">ENERO</div>
-        <div class="srow"><span class="dnum">1</span><span class="sname">María, Madre de Dios</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">2</span><span class="sname">Basilio Magno y Gregorio</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">3</span><span class="sname">Santísimo Nombre de Jesús</span><span class="chev">&rsaquo;</span></div>
         <div class="mes">FEBRERO</div>
         <div class="srow"><span class="dnum">2</span><span class="sname">Presentación del Señor</span><span class="chev">&rsaquo;</span></div>
         <div class="srow"><span class="dnum">3</span><span class="sname">Blas de Sebaste</span><span class="chev">&rsaquo;</span></div>
         <div class="srow sel"><span class="dnum">5</span><span class="sname">Águeda de Catania</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros, mártires del Japón</span><span class="chev">&rsaquo;</span></div>
         <div class="srow"><span class="dnum">11</span><span class="sname">Nuestra Señora de Lourdes</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">14</span><span class="sname">Cirilo y Metodio, patronos de Europa</span><span class="chev">&rsaquo;</span></div>
+        <div class="mes">MARZO</div>
+        <div class="srow"><span class="dnum">7</span><span class="sname">Perpetua y Felicidad</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">19</span><span class="sname">San José, esposo de María</span><span class="chev">&rsaquo;</span></div>
       </div>
     </div>
 
@@ -192,16 +224,16 @@
         <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
       </div>
       <div class="pane-body scroll">
-        <div class="mes">ENERO</div>
-        <div class="srow"><span class="dnum">1</span><span class="sname">María, Madre de Dios</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">2</span><span class="sname">Basilio Magno y Gregorio</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">3</span><span class="sname">Santísimo Nombre de Jesús</span><span class="chev">&rsaquo;</span></div>
         <div class="mes">FEBRERO</div>
         <div class="srow"><span class="dnum">2</span><span class="sname">Presentación del Señor</span><span class="chev">&rsaquo;</span></div>
         <div class="srow"><span class="dnum">3</span><span class="sname">Blas de Sebaste</span><span class="chev">&rsaquo;</span></div>
         <div class="srow sel"><span class="dnum">5</span><span class="sname">Águeda de Catania</span><span class="chev">&rsaquo;</span></div>
-        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros, mártires del Japón</span><span class="chev">&rsaquo;</span></div>
         <div class="srow"><span class="dnum">11</span><span class="sname">Nuestra Señora de Lourdes</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">14</span><span class="sname">Cirilo y Metodio, patronos de Europa</span><span class="chev">&rsaquo;</span></div>
+        <div class="mes">MARZO</div>
+        <div class="srow"><span class="dnum">7</span><span class="sname">Perpetua y Felicidad</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">19</span><span class="sname">San José, esposo de María</span><span class="chev">&rsaquo;</span></div>
       </div>
     </div>
 
@@ -232,6 +264,63 @@
         <div class="card grp">
           <div class="meta">FUENTES</div>
           <div class="body">Martirologio Romano, 5 de febrero &middot; Acta Sanctorum</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="states">
+  <div class="state-box">
+    <p class="state-cap">Sin resultados de b&uacute;squeda</p>
+    <div class="phone state-phone" data-theme="light">
+      <div class="frame"><div class="pane read" style="flex:1">
+        <div class="fixed-top"><button class="cap">&lsaquo; Todos los santos</button></div>
+        <div class="pane-body"><div class="empty">
+          <span class="g">&#9906;</span>
+          <span class="t">Ning&uacute;n santo coincide</span>
+          <span class="meta">Prueba con otro nombre o quita el filtro de mes.</span>
+          <button class="expand">Quitar filtros</button>
+        </div></div>
+      </div></div>
+    </div>
+  </div>
+  <div class="state-box">
+    <p class="state-cap">Sin santo elegido</p>
+    <div class="phone state-phone" data-theme="dark">
+      <div class="frame"><div class="pane read" style="flex:1">
+        <div class="fixed-top"><button class="cap">&lsaquo; Todos los santos</button></div>
+        <div class="pane-body"><div class="empty">
+          <span class="g">&#10047;</span>
+          <span class="t">Elige un santo</span>
+          <span class="meta">Toca un nombre del calendario para leer su ficha.</span>
+        </div></div>
+      </div></div>
+    </div>
+  </div>
+  <div class="state-box" style="width:940px">
+    <p class="state-cap">Nombre largo &middot; wrap del t&iacute;tulo, ellipsis en el &iacute;ndice</p>
+    <div class="phone state-phone" data-theme="light" style="width:940px">
+      <div class="frame">
+        <div class="pane index" style="flex:0 0 34%">
+          <div class="hdr"><h1>Santos</h1></div>
+          <div class="pane-body scroll">
+            <div class="mes">FEBRERO</div>
+            <div class="srow sel"><span class="dnum">6</span><span class="sname">Pablo Miki y compa&ntilde;eros, m&aacute;rtires del Jap&oacute;n</span><span class="chev">&rsaquo;</span></div>
+            <div class="srow"><span class="dnum">11</span><span class="sname">Nuestra Se&ntilde;ora de Lourdes</span><span class="chev">&rsaquo;</span></div>
+          </div>
+        </div>
+        <div class="pane read">
+          <div class="pane-body">
+            <div class="saint-head">
+              <div class="thumb" style="width:104px;height:76px;flex:0 0 104px"></div>
+              <div class="saint-id">
+                <h2 style="font-size:18px">San Pablo Miki y compa&ntilde;eros, m&aacute;rtires del Jap&oacute;n</h2>
+                <div class="meta">6 de febrero &middot; m&aacute;rtires</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
