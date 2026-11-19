@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Santos &middot; landscape v1</title>
+<link rel="stylesheet" href="lumen.css">
+<style>
+.pane.index { flex: 0 0 40%; }
+.hdr { height: 52px; padding: 8px 16px; display: flex; align-items: center; }
+.hdr h1 { font-size: 17px; font-weight: 600; margin: 0; color: var(--text-1); }
+.filters { padding: 0 16px 10px; display: flex; flex-direction: column; gap: 8px; }
+.search { height: 48px; border-radius: 999px; background: var(--raised);
+          border: 1px solid var(--hairline); display: flex; align-items: center;
+          gap: 8px; padding: 0 14px; }
+.search .mag { color: var(--text-3); font-size: 15px; }
+.search .ph { color: var(--text-3); font-size: 14px; }
+.chips { display: flex; gap: 6px; }
+.chip { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px;
+        border-radius: 999px; background: var(--selection); color: var(--text-2);
+        font-size: 13px; font-weight: 600; }
+.chip.on { background: var(--accent-muted); color: var(--accent); }
+.pane-body.scroll { overflow: hidden; padding: 0 12px 16px; }
+.mes { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--text-2);
+       padding: 10px 4px 4px; }
+.srow { min-height: 52px; display: flex; align-items: center; gap: 10px;
+        padding: 6px 10px; border-radius: 14px; }
+.srow.sel { background: var(--accent-muted); }
+.srow .dnum { width: 24px; font-size: 13px; font-weight: 700; color: var(--text-2); }
+.srow.sel .dnum { color: var(--accent); }
+.srow .sname { flex: 1; font-size: 14px; color: var(--text-1); }
+.srow .chev { color: var(--text-3); font-size: 16px; }
+.fixed-top { display: flex; align-items: center; gap: 8px; padding: 8px 16px; }
+.cap { min-height: 44px; display: inline-flex; align-items: center; padding: 0 16px;
+       border-radius: 999px; border: 1px solid var(--hairline); background: var(--selection);
+       color: var(--text-2); font-size: 13px; font-weight: 600; font-family: inherit; }
+.cap.on { background: var(--accent-muted); color: var(--accent); border-color: transparent; }
+.pane.read .pane-body { padding: 4px 16px 16px; }
+.saint-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
+.thumb { width: 128px; height: 88px; flex: 0 0 128px; border-radius: 18px;
+         background: linear-gradient(160deg, var(--selection), var(--accent-muted)); }
+.saint-id h2 { font-size: 20px; line-height: 1.25; margin: 0 0 4px; color: var(--text-1); }
+.meta { font-size: 12px; color: var(--text-2); line-height: 1.35; }
+.cred { margin-top: 3px; }
+.reading { max-width: 640px; font-size: 16px; line-height: 1.6; color: var(--text-1); }
+.card.grp { margin-top: 12px; padding: 12px 16px; border-radius: var(--r-group);
+            background: var(--grouped); border: 1px solid var(--hairline); }
+.card.grp .body { font-size: 14px; color: var(--text-1); margin-top: 3px; }
+.phone.w740 .thumb { width: 104px; height: 76px; flex: 0 0 104px; }
+.phone.w740 .hdr { height: 44px; }
+.phone.w740 .saint-id h2 { font-size: 18px; }
+.phone.w740 .reading { font-size: 15px; }
+</style>
+</head><body>
+<div class="phone w844" data-theme="light">
+  <div class="frame">
+    <div class="rail">
+      <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+      <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+      <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+      <div class="rail-item on"><span class="rail-ico">&#9636;</span>Leer</div>
+      <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+    </div>
+
+    <div class="pane index">
+      <div class="hdr"><h1>Santos</h1></div>
+      <div class="filters">
+        <div class="search"><span class="mag">&#9906;</span><span class="ph">Buscar santo</span></div>
+        <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
+      </div>
+      <div class="pane-body scroll">
+        <div class="mes">ENERO</div>
+        <div class="srow"><span class="dnum">1</span><span class="sname">María, Madre de Dios</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">2</span><span class="sname">Basilio Magno y Gregorio</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">3</span><span class="sname">Santísimo Nombre de Jesús</span><span class="chev">&rsaquo;</span></div>
+        <div class="mes">FEBRERO</div>
+        <div class="srow"><span class="dnum">2</span><span class="sname">Presentación del Señor</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">3</span><span class="sname">Blas de Sebaste</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow sel"><span class="dnum">5</span><span class="sname">Águeda de Catania</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">11</span><span class="sname">Nuestra Señora de Lourdes</span><span class="chev">&rsaquo;</span></div>
+      </div>
+    </div>
+
+    <div class="pane read">
+      <div class="fixed-top">
+        <button class="cap ghost">&lsaquo; Todos los santos</button>
+        <span class="sp"></span>
+        <button class="cap on">&#9654; Escuchar</button>
+      </div>
+      <div class="pane-body">
+        <div class="saint-head">
+          <div class="thumb"></div>
+          <div class="saint-id">
+            <h2>Santa Águeda de Catania</h2>
+            <div class="meta">5 de febrero &middot; virgen y mártir</div>
+            <div class="meta cred">Imagen: dominio público &middot; Wikimedia Commons</div>
+          </div>
+        </div>
+        <div class="reading">
+          <p>Águeda nació en Catania, Sicilia, en el siglo III. Consagrada a Dios desde joven,
+          rechazó al procónsul Quinciano y sufrió el martirio bajo la persecución de Decio.
+          Es invocada contra las enfermedades del pecho y los incendios.</p>
+        </div>
+        <div class="card grp">
+          <div class="meta">PATRONAZGOS</div>
+          <div class="body">Catania &middot; enfermas de pecho &middot; campaneros &middot; joyeros</div>
+        </div>
+        <div class="card grp">
+          <div class="meta">FUENTES</div>
+          <div class="body">Martirologio Romano, 5 de febrero &middot; Acta Sanctorum</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone w915" data-theme="dark">
+  <div class="frame">
+    <div class="rail">
+      <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+      <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+      <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+      <div class="rail-item on"><span class="rail-ico">&#9636;</span>Leer</div>
+      <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+    </div>
+
+    <div class="pane index">
+      <div class="hdr"><h1>Santos</h1></div>
+      <div class="filters">
+        <div class="search"><span class="mag">&#9906;</span><span class="ph">Buscar santo</span></div>
+        <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
+      </div>
+      <div class="pane-body scroll">
+        <div class="mes">ENERO</div>
+        <div class="srow"><span class="dnum">1</span><span class="sname">María, Madre de Dios</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">2</span><span class="sname">Basilio Magno y Gregorio</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">3</span><span class="sname">Santísimo Nombre de Jesús</span><span class="chev">&rsaquo;</span></div>
+        <div class="mes">FEBRERO</div>
+        <div class="srow"><span class="dnum">2</span><span class="sname">Presentación del Señor</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">3</span><span class="sname">Blas de Sebaste</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow sel"><span class="dnum">5</span><span class="sname">Águeda de Catania</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">11</span><span class="sname">Nuestra Señora de Lourdes</span><span class="chev">&rsaquo;</span></div>
+      </div>
+    </div>
+
+    <div class="pane read">
+      <div class="fixed-top">
+        <button class="cap ghost">&lsaquo; Todos los santos</button>
+        <span class="sp"></span>
+        <button class="cap on">&#9654; Escuchar</button>
+      </div>
+      <div class="pane-body">
+        <div class="saint-head">
+          <div class="thumb"></div>
+          <div class="saint-id">
+            <h2>Santa Águeda de Catania</h2>
+            <div class="meta">5 de febrero &middot; virgen y mártir</div>
+            <div class="meta cred">Imagen: dominio público &middot; Wikimedia Commons</div>
+          </div>
+        </div>
+        <div class="reading">
+          <p>Águeda nació en Catania, Sicilia, en el siglo III. Consagrada a Dios desde joven,
+          rechazó al procónsul Quinciano y sufrió el martirio bajo la persecución de Decio.
+          Es invocada contra las enfermedades del pecho y los incendios.</p>
+        </div>
+        <div class="card grp">
+          <div class="meta">PATRONAZGOS</div>
+          <div class="body">Catania &middot; enfermas de pecho &middot; campaneros &middot; joyeros</div>
+        </div>
+        <div class="card grp">
+          <div class="meta">FUENTES</div>
+          <div class="body">Martirologio Romano, 5 de febrero &middot; Acta Sanctorum</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone w740" data-theme="light">
+  <div class="frame">
+    <div class="rail">
+      <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+      <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+      <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+      <div class="rail-item on"><span class="rail-ico">&#9636;</span>Leer</div>
+      <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+    </div>
+
+    <div class="pane index">
+      <div class="hdr"><h1>Santos</h1></div>
+      <div class="filters">
+        <div class="search"><span class="mag">&#9906;</span><span class="ph">Buscar santo</span></div>
+        <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
+      </div>
+      <div class="pane-body scroll">
+        <div class="mes">ENERO</div>
+        <div class="srow"><span class="dnum">1</span><span class="sname">María, Madre de Dios</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">2</span><span class="sname">Basilio Magno y Gregorio</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">3</span><span class="sname">Santísimo Nombre de Jesús</span><span class="chev">&rsaquo;</span></div>
+        <div class="mes">FEBRERO</div>
+        <div class="srow"><span class="dnum">2</span><span class="sname">Presentación del Señor</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">3</span><span class="sname">Blas de Sebaste</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow sel"><span class="dnum">5</span><span class="sname">Águeda de Catania</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">6</span><span class="sname">Pablo Miki y compañeros</span><span class="chev">&rsaquo;</span></div>
+        <div class="srow"><span class="dnum">11</span><span class="sname">Nuestra Señora de Lourdes</span><span class="chev">&rsaquo;</span></div>
+      </div>
+    </div>
+
+    <div class="pane read">
+      <div class="fixed-top">
+        <button class="cap ghost">&lsaquo; Todos los santos</button>
+        <span class="sp"></span>
+        <button class="cap on">&#9654; Escuchar</button>
+      </div>
+      <div class="pane-body">
+        <div class="saint-head">
+          <div class="thumb"></div>
+          <div class="saint-id">
+            <h2>Santa Águeda de Catania</h2>
+            <div class="meta">5 de febrero &middot; virgen y mártir</div>
+            <div class="meta cred">Imagen: dominio público &middot; Wikimedia Commons</div>
+          </div>
+        </div>
+        <div class="reading">
+          <p>Águeda nació en Catania, Sicilia, en el siglo III. Consagrada a Dios desde joven,
+          rechazó al procónsul Quinciano y sufrió el martirio bajo la persecución de Decio.
+          Es invocada contra las enfermedades del pecho y los incendios.</p>
+        </div>
+        <div class="card grp">
+          <div class="meta">PATRONAZGOS</div>
+          <div class="body">Catania &middot; enfermas de pecho &middot; campaneros &middot; joyeros</div>
+        </div>
+        <div class="card grp">
+          <div class="meta">FUENTES</div>
+          <div class="body">Martirologio Romano, 5 de febrero &middot; Acta Sanctorum</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>
