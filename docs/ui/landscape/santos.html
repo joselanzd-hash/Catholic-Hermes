@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
-<title>Santos &middot; landscape v2</title>
+<title>Santos &middot; landscape v3 - APROBADO</title>
 <link rel="stylesheet" href="lumen.css">
 <style>
 /* v2: canvas plano, el token exacto (el gradiente sutil estaba fuera de token) */
@@ -13,7 +13,7 @@
 .search { height: 48px; border-radius: 999px; background: var(--raised);
           border: 1px solid var(--hairline); display: flex; align-items: center;
           gap: 8px; padding: 0 14px; }
-.search .mag { color: var(--text-3); font-size: 15px; }
+.search .mag { color: var(--text-3); flex: 0 0 16px; }
 .search .ph { color: var(--text-3); font-size: 14px; }
 .chips { display: flex; gap: 6px; }
 /* v2 / bloqueante 1: TODOS los chips a 44dp, no solo el activo (37 vs 44) */
@@ -43,7 +43,7 @@
 .pane.read .pane-body { padding: 4px 16px 16px; }
 .saint-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
 .thumb { width: 128px; height: 88px; flex: 0 0 128px; border-radius: 18px;
-         background: linear-gradient(160deg, var(--selection), var(--accent-muted)); }
+         background: var(--accent-muted); }
 /* v2 / bloqueante 3: el titulo hace wrap, no se corta (max 3 lineas) */
 .saint-id { min-width: 0; }
 .saint-id h2 { font-size: 20px; line-height: 1.25; margin: 0 0 4px; color: var(--text-1);
@@ -94,7 +94,7 @@
     <div class="pane index">
       <div class="hdr"><h1>Santos</h1></div>
       <div class="filters">
-        <div class="search"><span class="mag">&#9906;</span><span class="ph">Buscar santo</span></div>
+        <div class="search"><svg class="mag" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6.8" cy="6.8" r="4.6"/><path d="M10.4 10.4 L14 14"/></svg><span class="ph">Buscar santo</span></div>
         <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
       </div>
       <div class="pane-body scroll">
@@ -157,7 +157,7 @@
     <div class="pane index">
       <div class="hdr"><h1>Santos</h1></div>
       <div class="filters">
-        <div class="search"><span class="mag">&#9906;</span><span class="ph">Buscar santo</span></div>
+        <div class="search"><svg class="mag" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6.8" cy="6.8" r="4.6"/><path d="M10.4 10.4 L14 14"/></svg><span class="ph">Buscar santo</span></div>
         <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
       </div>
       <div class="pane-body scroll">
@@ -220,7 +220,7 @@
     <div class="pane index">
       <div class="hdr"><h1>Santos</h1></div>
       <div class="filters">
-        <div class="search"><span class="mag">&#9906;</span><span class="ph">Buscar santo</span></div>
+        <div class="search"><svg class="mag" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6.8" cy="6.8" r="4.6"/><path d="M10.4 10.4 L14 14"/></svg><span class="ph">Buscar santo</span></div>
         <div class="chips"><span class="chip on">Todos</span><span class="chip">Febrero</span><span class="chip">Con ficha</span></div>
       </div>
       <div class="pane-body scroll">
@@ -278,7 +278,7 @@
       <div class="frame"><div class="pane read" style="flex:1">
         <div class="fixed-top"><button class="cap">&lsaquo; Todos los santos</button></div>
         <div class="pane-body"><div class="empty">
-          <span class="g">&#9906;</span>
+          <span class="g"><svg class="mag" width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6.8" cy="6.8" r="4.6"/><path d="M10.4 10.4 L14 14"/></svg></span>
           <span class="t">Ning&uacute;n santo coincide</span>
           <span class="meta">Prueba con otro nombre o quita el filtro de mes.</span>
           <button class="expand">Quitar filtros</button>
@@ -299,9 +299,9 @@
       </div></div>
     </div>
   </div>
-  <div class="state-box" style="width:940px">
+  <div class="state-box" style="width:740px">
     <p class="state-cap">Nombre largo &middot; wrap del t&iacute;tulo, ellipsis en el &iacute;ndice</p>
-    <div class="phone state-phone" data-theme="light" style="width:940px">
+    <div class="phone state-phone" data-theme="light" style="width:740px">
       <div class="frame">
         <div class="pane index" style="flex:0 0 34%">
           <div class="hdr"><h1>Santos</h1></div>
@@ -316,7 +316,7 @@
             <div class="saint-head">
               <div class="thumb" style="width:104px;height:76px;flex:0 0 104px"></div>
               <div class="saint-id">
-                <h2 style="font-size:18px">San Pablo Miki y compa&ntilde;eros, m&aacute;rtires del Jap&oacute;n</h2>
+                <h2 style="font-size:18px">San Pablo Miki y compa&ntilde;eros, m&aacute;rtires del Jap&oacute;n en Nagasaki</h2>
                 <div class="meta">6 de febrero &middot; m&aacute;rtires</div>
               </div>
             </div>
