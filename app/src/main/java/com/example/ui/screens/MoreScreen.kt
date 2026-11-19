@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -52,8 +53,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.BuildConfig
 import com.example.data.models.AppLanguage
 import com.example.data.repository.CatechismOutline
@@ -70,6 +74,7 @@ import com.example.ui.design.lumenPress
 import com.example.ui.design.rememberAssetBitmap
 import com.example.ui.design.rememberFirstAsset
 import com.example.ui.design.rememberHeroMeta
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.design.AppIconWell
 import com.example.ui.design.softShadow
 import com.example.ui.theme.LocalAppDesign
@@ -156,6 +161,175 @@ fun MoreScreen(
     // Appearance value when the caller sends none: the mode in force.
     val modeFallback = if (design.isDark) pick("Oscuro", "Dark", "Escuro") else pick("Claro", "Light", "Claro")
 
+    val form = rememberLandscapeForm()
+
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val beginnerContent: @Composable ColumnScope.() -> Unit = {
+        Text(pick("Empieza aquí", "Start here", "Comece aqui"), style = styles.title2, color = p.textPrimary)
+        Spacer(Modifier.height(8.dp))
+        Text(pick("Jesús, oración, primera Misa y confesión. Siete pasos a tu ritmo.", "Jesus, prayer, first Mass and confession. Seven steps at your pace.", "Jesus, oração, primeira Missa e confissão. Sete passos no seu ritmo."), style = styles.callout, color = p.textSecondary)
+        Spacer(Modifier.height(12.dp))
+        com.example.ui.design.AppPrimaryCapsule(pick("Dar un primer paso", "Take a first step", "Dar um primeiro passo"), onClick = onOpenBeginner, tag = "nav_beginner")
+    }
+    val studyCard: @Composable (MoreEntry) -> Unit = { entry ->
+        val info = studyCardInfo(entry.tag, currentLanguage)
+        StudyCard(
+            title = info?.title ?: entry.title,
+            meta = info?.meta ?: entry.subtitle,
+            spokenTitle = entry.title,
+            assetPath = info?.art,
+            onClick = entry.onOpen,
+            tag = entry.tag
+        )
+    }
+    val creditsEntry = MoreEntry(
+        title = pick("Créditos de las imágenes", "Image credits", "Créditos das imagens"),
+        iconSlot = AppIconSlot.MORE,
+        tag = "image_credits_button",
+        value = creditCount.takeIf { it > 0 }?.toString(),
+        icon = Icons.Outlined.Collections,
+        onOpen = { showCredits = true }
+    )
+    val versionText: @Composable (Modifier, Int) -> Unit = { mod, lines ->
+        Text(
+            text = "Sancta Fides · ${pick("Versión", "Version", "Versão")} ${BuildConfig.VERSION_NAME}",
+            style = styles.footnote,
+            color = p.textSecondary,
+            textAlign = TextAlign.Center,
+            maxLines = lines,
+            overflow = TextOverflow.Ellipsis,
+            modifier = mod
+        )
+    }
+
+    // Landscape phone: the 232dp hero alone fills a 390dp-tall screen. A compact
+    // header (art thumbnail + title + version) replaces it, and the single
+    // scrolling column lays its cards and settings out in 2-3 column grids so
+    // the extra width shortens the scroll instead of widening empty margins.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val columns = if (form.panes >= 3) 3 else 2
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding())
+        ) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(form.headerHeight)
+                    .padding(horizontal = form.gutter),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val heroBitmap = rememberAssetBitmap(heroAsset, 320)
+                if (heroBitmap != null) {
+                    Image(
+                        bitmap = heroBitmap,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .width(56.dp)
+                            .height(34.dp)
+                            .clip(design.shapes.thumbnail)
+                            .testTag("more_hero_photo")
+                    )
+                    Spacer(Modifier.width(10.dp))
+                }
+                Text(
+                    text = pick("Explorar", "Explore", "Explorar"),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = p.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).testTag("more_title")
+                )
+                Spacer(Modifier.width(10.dp))
+                versionText(Modifier.testTag("more_version"), 1)
+            }
+            LazyColumn(
+                Modifier
+                    .fillMaxSize()
+                    .testTag("more_screen"),
+                contentPadding = PaddingValues(
+                    start = form.gutter,
+                    end = form.gutter,
+                    top = 4.dp,
+                    bottom = insets.calculateBottomPadding() + 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                var sectionIndex = 0
+                fun header(key: String, title: String) {
+                    val index = sectionIndex++
+                    item(key = "more_header_$key") {
+                        AppSectionHeader(title = title, modifier = Modifier.testTag("more_section_$index"))
+                    }
+                }
+
+                item(key = "more_top") {
+                    if (search == null && innerLife.isEmpty()) {
+                        com.example.ui.design.AppCard(Modifier.fillMaxWidth().testTag("explore_start_here")) { beginnerContent() }
+                    } else {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(design.spacing.cardGap)
+                        ) {
+                            com.example.ui.design.AppCard(Modifier.weight(1f).testTag("explore_start_here")) { beginnerContent() }
+                            Column(
+                                Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(design.spacing.cardGap)
+                            ) {
+                                if (search != null) EntryGroup(listOf(search), currentLanguage, modeFallback, gutter = 0.dp)
+                                if (innerLife.isNotEmpty()) EntryGroup(innerLife, currentLanguage, modeFallback, gutter = 0.dp)
+                            }
+                        }
+                    }
+                }
+
+                if (churchToday.isNotEmpty()) {
+                    header("church_first", pick("Misa y comunidad", "Mass & community", "Missa e comunidade"))
+                    item(key = "more_church_first") { EntryGrid(churchToday, currentLanguage, modeFallback, columns) }
+                }
+
+                if (study.isNotEmpty()) {
+                    header("study", pick("Estudio", "Study", "Estudo"))
+                    item(key = "more_study_cards") {
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .testTag("more_section_hero_0"),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            study.chunked(columns).forEach { rowEntries ->
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    rowEntries.forEach { entry ->
+                                        Box(Modifier.weight(1f)) { studyCard(entry) }
+                                    }
+                                    repeat(columns - rowEntries.size) { Spacer(Modifier.weight(1f)) }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                header("settings", pick("Ajustes", "Settings", "Ajustes"))
+                item(key = "more_settings") { EntryGrid(settings + creditsEntry, currentLanguage, modeFallback, columns) }
+
+                leftovers.forEachIndexed { i, section ->
+                    header("other_$i", section.title)
+                    item(key = "more_other_$i") { EntryGrid(section.entries, currentLanguage, modeFallback, columns) }
+                }
+            }
+        }
+        if (showCredits) {
+            ImageCreditsSheet(currentLanguage = currentLanguage, onDismiss = { showCredits = false })
+        }
+        return
+    }
+
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -191,11 +365,7 @@ fun MoreScreen(
 
         item(key = "more_beginner") {
             com.example.ui.design.AppCard(Modifier.padding(horizontal = design.spacing.gutter).testTag("explore_start_here")) {
-                Text(pick("Empieza aquí", "Start here", "Comece aqui"), style = styles.title2, color = p.textPrimary)
-                Spacer(Modifier.height(8.dp))
-                Text(pick("Jesús, oración, primera Misa y confesión. Siete pasos a tu ritmo.", "Jesus, prayer, first Mass and confession. Seven steps at your pace.", "Jesus, oração, primeira Missa e confissão. Sete passos no seu ritmo."), style = styles.callout, color = p.textSecondary)
-                Spacer(Modifier.height(12.dp))
-                com.example.ui.design.AppPrimaryCapsule(pick("Dar un primer paso", "Take a first step", "Dar um primeiro passo"), onClick = onOpenBeginner, tag = "nav_beginner")
+                beginnerContent()
             }
         }
         if (churchToday.isNotEmpty()) {
@@ -216,15 +386,7 @@ fun MoreScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     study.forEach { entry ->
-                        val info = studyCardInfo(entry.tag, currentLanguage)
-                        StudyCard(
-                            title = info?.title ?: entry.title,
-                            meta = info?.meta ?: entry.subtitle,
-                            spokenTitle = entry.title,
-                            assetPath = info?.art,
-                            onClick = entry.onOpen,
-                            tag = entry.tag
-                        )
+                        studyCard(entry)
                     }
                 }
             }
@@ -241,26 +403,15 @@ fun MoreScreen(
 
         header("settings", pick("Ajustes", "Settings", "Ajustes"))
         item(key = "more_settings") {
-            val creditsEntry = MoreEntry(
-                title = pick("Créditos de las imágenes", "Image credits", "Créditos das imagens"),
-                iconSlot = AppIconSlot.MORE,
-                tag = "image_credits_button",
-                value = creditCount.takeIf { it > 0 }?.toString(),
-                icon = Icons.Outlined.Collections,
-                onOpen = { showCredits = true }
-            )
             EntryGroup(listOf(creditsEntry), currentLanguage, modeFallback)
         }
         item(key = "more_footer") {
-            Text(
-                text = "Sancta Fides · ${pick("Versión", "Version", "Versão")} ${BuildConfig.VERSION_NAME}",
-                style = styles.footnote,
-                color = p.textSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
+            versionText(
+                Modifier
                     .fillMaxWidth()
                     .padding(horizontal = design.spacing.gutter, vertical = 20.dp)
-                    .testTag("more_version")
+                    .testTag("more_version"),
+                Int.MAX_VALUE
             )
         }
     }
@@ -451,13 +602,18 @@ private fun glyphFor(entry: MoreEntry): ImageVector = when (entry.tag) {
 
 /** A glass group of [entries]: outline glyph, title, footnote, value, chevron. */
 @Composable
-private fun EntryGroup(entries: List<MoreEntry>, language: AppLanguage, modeFallback: String) {
+private fun EntryGroup(
+    entries: List<MoreEntry>,
+    language: AppLanguage,
+    modeFallback: String,
+    gutter: Dp = LocalAppDesign.current.spacing.gutter
+) {
     val design = LocalAppDesign.current
     val shape = design.shapes.listGroup
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = design.spacing.gutter)
+            .padding(horizontal = gutter)
             .lumenGlass(shape)
             .clip(shape)
     ) {
@@ -472,6 +628,60 @@ private fun EntryGroup(entries: List<MoreEntry>, language: AppLanguage, modeFall
                 tag = entry.tag,
                 showDivider = i < entries.lastIndex
             )
+        }
+    }
+}
+
+/**
+ * Landscape variant of [EntryGroup]: the same glass group, but its rows sit in
+ * a fixed [columns]-wide grid so settings use the width instead of lengthening
+ * the scroll. Cells reuse [EntryRow] unchanged (tags, touch targets, values);
+ * hairlines separate grid rows, and the last row keeps empty cells weighted so
+ * nothing stretches orphaned.
+ */
+@Composable
+private fun EntryGrid(
+    entries: List<MoreEntry>,
+    language: AppLanguage,
+    modeFallback: String,
+    columns: Int
+) {
+    val design = LocalAppDesign.current
+    val shape = design.shapes.listGroup
+    val rows = entries.chunked(columns.coerceAtLeast(1))
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .lumenGlass(shape)
+            .clip(shape)
+    ) {
+        rows.forEachIndexed { rowIndex, rowEntries ->
+            Row(Modifier.fillMaxWidth()) {
+                rowEntries.forEach { entry ->
+                    val info = rowInfo(entry.tag, language)
+                    Box(Modifier.weight(1f)) {
+                        EntryRow(
+                            icon = glyphFor(entry),
+                            title = info?.title ?: entry.title,
+                            subtitle = info?.subtitle ?: entry.subtitle,
+                            value = entry.value ?: if (entry.tag == "app_bar_theme_button") modeFallback else null,
+                            onClick = entry.onOpen,
+                            tag = entry.tag,
+                            showDivider = false
+                        )
+                    }
+                }
+                repeat(columns - rowEntries.size) { Spacer(Modifier.weight(1f)) }
+            }
+            if (rowIndex < rows.lastIndex) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = RowInset)
+                        .height(0.5.dp)
+                        .background(design.palette.separator)
+                )
+            }
         }
     }
 }

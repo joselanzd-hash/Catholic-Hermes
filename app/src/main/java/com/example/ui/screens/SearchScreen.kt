@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -21,7 +22,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.data.models.AppLanguage
 import com.example.data.search.GlobalSearch
 import com.example.data.search.SearchGroup
@@ -39,7 +42,11 @@ import com.example.ui.design.AppListRow
 import com.example.ui.design.AppSearchBar
 import com.example.ui.design.AppSecondaryButton
 import com.example.ui.design.AppSectionHeader
+import com.example.ui.design.LandscapeGap
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
 import com.example.ui.design.appScreenInsets
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
 import kotlinx.coroutines.Dispatchers
@@ -112,6 +119,138 @@ fun SearchScreen(
     }
 
     val gutter = Modifier.padding(horizontal = design.spacing.gutter)
+    val form = rememberLandscapeForm()
+
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val fieldBlock: @Composable () -> Unit = {
+        AppSearchBar(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = tr("Buscar en toda la app", "Search everything", "Buscar em todo o app"),
+            tag = "search_field",
+            autoFocus = query.isEmpty(),
+            onSubmit = { focus.clearFocus() }
+        )
+    }
+    val hintBlock: @Composable (Modifier) -> Unit = { mod ->
+        Text(
+            tr("Oraciones, santos, el Catecismo, la Biblia… o una cita como «Jn 3,16».",
+                "Prayers, saints, the Catechism, the Bible… or a reference like “John 3:16”.",
+                "Orações, santos, o Catecismo, a Bíblia… ou uma citação como «Jo 3,16»."),
+            style = styles.callout, color = p.textSecondary,
+            modifier = mod.testTag("search_hint")
+        )
+    }
+    val buildingBlock: @Composable (Modifier) -> Unit = { mod ->
+        AppBanner(tr("Preparando la búsqueda…", "Getting search ready…", "Preparando a busca…"), modifier = mod.testTag("search_loading"))
+    }
+    val emptyBlock: @Composable (Modifier) -> Unit = { mod ->
+        AppEmptyState(
+            tr("Sin resultados", "No results", "Sem resultados"),
+            tr("Prueba con otra palabra.", "Try another word.", "Tente outra palavra."),
+            icon = Icons.Outlined.Search,
+            modifier = mod.testTag("search_empty")
+        )
+    }
+    val groupBlock: @Composable (SearchGroup, Modifier) -> Unit = { group, g ->
+        val open = group.type.tag in expanded.split(',')
+        val shown = if (open) group.results else group.results.take(SearchGroupPreview)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val count = if (group.capped) "${group.total}+" else group.total.toString()
+            AppSectionHeader(
+                groupTitle(group.type),
+                if (group.type == SearchType.REFERENCE) null
+                else if (group.total == 1) tr("1 resultado", "1 result", "1 resultado")
+                else tr("$count resultados", "$count results", "$count resultados"),
+                Modifier.testTag("search_group_${group.type.tag}")
+            )
+            AppListGroup {
+                shown.forEach { r ->
+                    AppListRow(
+                        title = r.title,
+                        subtitle = r.snippet ?: r.subtitle,
+                        onClick = { onOpen(r.target) },
+                        modifier = Modifier.testTag("search_result_${group.type.tag}_${r.id}")
+                    )
+                }
+            }
+            if (group.total > SearchGroupPreview) {
+                AppSecondaryButton(
+                    if (open) tr("Ver menos", "Show less", "Ver menos")
+                    else tr("Ver todos (${group.total}${if (group.capped) "+" else ""})", "See all (${group.total}${if (group.capped) "+" else ""})", "Ver todos (${group.total}${if (group.capped) "+" else ""})"),
+                    onClick = {
+                        val tags = expanded.split(',').filter { it.isNotEmpty() }.toMutableList()
+                        if (open) tags.remove(group.type.tag) else tags.add(group.type.tag)
+                        expanded = tags.joinToString(",")
+                    },
+                    modifier = g.fillMaxWidth().testTag("search_more_${group.type.tag}")
+                )
+                if (open && group.total > group.results.size) Text(
+                    tr("Se muestran los ${group.results.size} primeros. Prueba con más palabras.",
+                        "Showing the first ${group.results.size}. Try more words.",
+                        "Mostrando os ${group.results.size} primeiros. Tente mais palavras."),
+                    style = styles.footnote, color = p.textSecondary, modifier = g
+                )
+            }
+        }
+    }
+
+    // Landscape phone: the IME eats most of the height, so the field and its
+    // guidance stay pinned in a top-anchored left pane while the results own
+    // the right pane — the only scroll — lifted above the keyboard.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier.fillMaxSize(),
+            leftWidthFraction = 0.36f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        Text(
+                            tr("Buscar", "Search", "Buscar"),
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = p.textPrimary,
+                            maxLines = 1,
+                            modifier = Modifier.testTag("search_title")
+                        )
+                        LandscapeGap(form)
+                        fieldBlock()
+                        LandscapeGap(form)
+                        when (ui) {
+                            SearchUi.Idle -> hintBlock(Modifier)
+                            SearchUi.Building -> buildingBlock(Modifier)
+                            else -> {}
+                        }
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize().imePadding().testTag("search_screen"),
+                    contentPadding = PaddingValues(
+                        start = form.gutter,
+                        end = form.gutter,
+                        top = 12.dp,
+                        bottom = appScreenInsets().calculateBottomPadding() + 24.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    when (val state = ui) {
+                        SearchUi.Idle, SearchUi.Building -> {}
+                        is SearchUi.Ready -> {
+                            val groups = listOfNotNull(state.reference?.let { SearchGroup(SearchType.REFERENCE, 1, listOf(it)) }) + state.groups
+                            if (groups.isEmpty() && !state.bibleBusy) item("empty") { emptyBlock(Modifier) }
+                            groups.forEach { group ->
+                                item(key = "group_${group.type.tag}") { groupBlock(group, Modifier) }
+                            }
+                        }
+                    }
+                }
+            }
+        )
+        return
+    }
 
     LazyColumn(
         Modifier.fillMaxSize().padding(bottom = appScreenInsets().calculateBottomPadding()).testTag("search_screen"),
@@ -119,82 +258,15 @@ fun SearchScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item("header") { AppLargeTitleHeader(tr("Buscar", "Search", "Buscar"), titleTag = "search_title") }
-        item("field") {
-            AppSearchBar(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = tr("Buscar en toda la app", "Search everything", "Buscar em todo o app"),
-                tag = "search_field",
-                autoFocus = query.isEmpty(),
-                onSubmit = { focus.clearFocus() }
-            )
-        }
+        item("field") { fieldBlock() }
         when (val state = ui) {
-            SearchUi.Idle -> item("hint") {
-                Text(
-                    tr("Oraciones, santos, el Catecismo, la Biblia… o una cita como «Jn 3,16».",
-                        "Prayers, saints, the Catechism, the Bible… or a reference like “John 3:16”.",
-                        "Orações, santos, o Catecismo, a Bíblia… ou uma citação como «Jo 3,16»."),
-                    style = styles.callout, color = p.textSecondary,
-                    modifier = gutter.testTag("search_hint")
-                )
-            }
-            SearchUi.Building -> item("building") {
-                AppBanner(tr("Preparando la búsqueda…", "Getting search ready…", "Preparando a busca…"), modifier = gutter.testTag("search_loading"))
-            }
+            SearchUi.Idle -> item("hint") { hintBlock(gutter) }
+            SearchUi.Building -> item("building") { buildingBlock(gutter) }
             is SearchUi.Ready -> {
                 val groups = listOfNotNull(state.reference?.let { SearchGroup(SearchType.REFERENCE, 1, listOf(it)) }) + state.groups
-                if (groups.isEmpty() && !state.bibleBusy) item("empty") {
-                    AppEmptyState(
-                        tr("Sin resultados", "No results", "Sem resultados"),
-                        tr("Prueba con otra palabra.", "Try another word.", "Tente outra palavra."),
-                        icon = Icons.Outlined.Search,
-                        modifier = gutter.testTag("search_empty")
-                    )
-                }
+                if (groups.isEmpty() && !state.bibleBusy) item("empty") { emptyBlock(gutter) }
                 groups.forEach { group ->
-                    item(key = "group_${group.type.tag}") {
-                        val open = group.type.tag in expanded.split(',')
-                        val shown = if (open) group.results else group.results.take(SearchGroupPreview)
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val count = if (group.capped) "${group.total}+" else group.total.toString()
-                            AppSectionHeader(
-                                groupTitle(group.type),
-                                if (group.type == SearchType.REFERENCE) null
-                                else if (group.total == 1) tr("1 resultado", "1 result", "1 resultado")
-                                else tr("$count resultados", "$count results", "$count resultados"),
-                                Modifier.testTag("search_group_${group.type.tag}")
-                            )
-                            AppListGroup {
-                                shown.forEach { r ->
-                                    AppListRow(
-                                        title = r.title,
-                                        subtitle = r.snippet ?: r.subtitle,
-                                        onClick = { onOpen(r.target) },
-                                        modifier = Modifier.testTag("search_result_${group.type.tag}_${r.id}")
-                                    )
-                                }
-                            }
-                            if (group.total > SearchGroupPreview) {
-                                AppSecondaryButton(
-                                    if (open) tr("Ver menos", "Show less", "Ver menos")
-                                    else tr("Ver todos (${group.total}${if (group.capped) "+" else ""})", "See all (${group.total}${if (group.capped) "+" else ""})", "Ver todos (${group.total}${if (group.capped) "+" else ""})"),
-                                    onClick = {
-                                        val tags = expanded.split(',').filter { it.isNotEmpty() }.toMutableList()
-                                        if (open) tags.remove(group.type.tag) else tags.add(group.type.tag)
-                                        expanded = tags.joinToString(",")
-                                    },
-                                    modifier = gutter.fillMaxWidth().testTag("search_more_${group.type.tag}")
-                                )
-                                if (open && group.total > group.results.size) Text(
-                                    tr("Se muestran los ${group.results.size} primeros. Prueba con más palabras.",
-                                        "Showing the first ${group.results.size}. Try more words.",
-                                        "Mostrando os ${group.results.size} primeiros. Tente mais palavras."),
-                                    style = styles.footnote, color = p.textSecondary, modifier = gutter
-                                )
-                            }
-                        }
-                    }
+                    item(key = "group_${group.type.tag}") { groupBlock(group, gutter) }
                 }
             }
         }
