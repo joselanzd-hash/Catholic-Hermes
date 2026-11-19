@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -571,7 +572,8 @@ private fun DevotionPage(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .height(if (form.isShortLandscape) 78.dp else 104.dp)
+                                .weight(1f)
+                                .heightIn(min = if (form.isShortLandscape) 78.dp else 104.dp)
                                 .clip(RoundedCornerShape(18.dp))
                         ) {
                             AppHeroImage(

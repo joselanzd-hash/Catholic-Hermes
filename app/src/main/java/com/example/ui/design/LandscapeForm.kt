@@ -65,11 +65,15 @@ data class LandscapeForm(
     /** True when the screen should use the two/three-zone landscape layout. */
     val useLandscapeLayout: Boolean get() = isLandscape && panes >= 2
 
-    /** Header budget: a landscape header must never eat the reading pane. */
+    /**
+     * Header budget: a landscape header must never eat the reading pane, but it
+     * also has to leave air around its own controls. A 44dp touch target inside a
+     * 44dp header sits tangent to the screen edge — the arc reads as clipped. The
+     * floor is therefore 52dp: 44dp of target plus 4dp above and below.
+     */
     val headerHeight: Dp
         get() = when {
             !isLandscape -> 0.dp // portrait keeps its illustrated header
-            heightDp < 380.dp -> 44.dp
             else -> 52.dp
         }
 

@@ -1283,7 +1283,8 @@ private fun CccIndexPage(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .height(if (form.heightDp < 380.dp) 78.dp else 96.dp)
+                                .weight(1f)
+                                .heightIn(min = if (form.heightDp < 380.dp) 78.dp else 96.dp)
                                 .clip(RoundedCornerShape(18.dp))
                                 .testTag("catechism_hero_photo")
                         ) {

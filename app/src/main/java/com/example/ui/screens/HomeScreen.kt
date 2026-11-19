@@ -475,6 +475,12 @@ fun HomeScreen(
                         Spacer(Modifier.weight(1f))
                         if (fidelityInLeft) {
                             FidelityStrip(dao!!, currentLanguage, onNavigateToHabits, onOpenTemptations)
+                        } else if (forYouHome.isNotEmpty()) {
+                            // The fidelity strip does not fit at this height. Omitting it
+                            // leaves a dead strip at the bottom of a pane that never
+                            // scrolls, so the day's suggestion moves here instead: the
+                            // surplus goes to content, not to margin.
+                            ForYouToday(currentLanguage, forYouHome, onOpen = openSuggestion, onSeeAll = { showForYou = true })
                         }
                     }
                     PaneDivider()
@@ -623,7 +629,7 @@ fun HomeScreen(
                                 }
                                 Spacer(Modifier.height(ClusterGap))
                             }
-                            if (forYouHome.isNotEmpty()) item(key = "for_you_today") {
+                            if (forYouHome.isNotEmpty() && fidelityInLeft) item(key = "for_you_today") {
                                 ForYouToday(currentLanguage, forYouHome, onOpen = openSuggestion, onSeeAll = { showForYou = true })
                                 Spacer(Modifier.height(ClusterGap))
                             }

@@ -802,7 +802,8 @@ private fun ShrineDetail(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .height(if (form.isShortLandscape) 78.dp else 104.dp)
+                                .weight(1f)
+                                .heightIn(min = if (form.isShortLandscape) 78.dp else 104.dp)
                                 .clip(RoundedCornerShape(18.dp))
                         ) {
                             AppHeroImage(hero, Modifier.fillMaxSize(), fadeToCanvas = false, topVeil = false)
