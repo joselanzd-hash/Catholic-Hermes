@@ -88,6 +88,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -120,6 +121,9 @@ import com.example.ui.design.AppProgressBar
 import com.example.ui.design.AppRoundPlayButton
 import com.example.ui.design.AppSecondaryCapsule
 import com.example.ui.design.AppSheet
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.design.lumenGlass
 import com.example.ui.design.lumenPress
 import com.example.ui.theme.LocalAppDesign
@@ -627,6 +631,232 @@ private fun HabitsRoot(
     val styles = LocalAppTextStyles.current
     val title = lang.pick3("Hábitos", "Habits", "Hábitos")
     AppInlineTitle(title)
+    val form = rememberLandscapeForm()
+
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val temptationCardTitle = lang.pick3("Tentaciones y victorias", "Temptations and victories", "Tentações e vitórias")
+    val temptationCardSubtitle = lang.pick3(
+        "La tentación en sí no es pecado. Tu registro es privado y opcional.",
+        "Temptation itself is not sin. Your record is private and optional.",
+        "A tentação em si não é pecado. Seu registro é privado e opcional."
+    )
+    val victoryButton: @Composable (Modifier) -> Unit = { m ->
+        AppSecondaryCapsule(
+            label = lang.pick3("Registrar victoria", "Record victory", "Registrar vitória"),
+            onClick = onVictory,
+            modifier = m,
+            fillWidth = true,
+            tag = "habits_record_victory"
+        )
+    }
+    val fallButton: @Composable (Modifier) -> Unit = { m ->
+        AppSecondaryCapsule(
+            label = lang.pick3("Registrar caída", "Record a fall", "Registrar queda"),
+            onClick = onFall,
+            modifier = m,
+            fillWidth = true,
+            tag = "habits_record_fall"
+        )
+    }
+    val helpButton: @Composable (Modifier) -> Unit = { m ->
+        AppSecondaryCapsule(
+            label = lang.pick3("Cómo vencer una tentación", "Help to overcome temptation", "Como vencer uma tentação"),
+            onClick = onOpenTemptation,
+            modifier = m,
+            fillWidth = true,
+            tag = "open_temptation"
+        )
+    }
+    val ruleNoteBlock: @Composable () -> Unit = {
+        Text(
+            lang.pick3(
+                "Una propuesta para tu oración personal. Leer las lecturas no sustituye la obligación de la Misa dominical.",
+                "A suggested personal rule of prayer. Scripture reading does not replace the Sunday Mass obligation.",
+                "Uma proposta para a sua oração pessoal. Ler as leituras não substitui a obrigação da Missa dominical."
+            ),
+            style = styles.footnote,
+            color = p.textSecondary,
+            modifier = Modifier.padding(horizontal = design.spacing.gutter, vertical = 12.dp)
+        )
+    }
+    val groupCard: @Composable (Int, List<DailyHabit>) -> Unit = { groupIndex, habits ->
+        AppListGroup(
+            modifier = Modifier.testTag(
+                if (groupIndex == 0) "habits_checklist_card" else "habits_checklist_card_$groupIndex"
+            )
+        ) {
+            habits.forEachIndexed { i, habit ->
+                RuleRow(
+                    habit = habit,
+                    checked = habit.id in keptIds,
+                    lang = lang,
+                    onToggle = { onToggle(habit.id) },
+                    onOpen = if (habit.action != DailyHabitAction.NONE) ({ onOpen(habit.action) }) else null,
+                    showDivider = i < habits.lastIndex
+                )
+            }
+        }
+    }
+    val remindersBlock: @Composable (Boolean) -> Unit = { compact ->
+        AppListGroup {
+            AppListRow(
+                title = lang.pick3("Recordatorios", "Reminders", "Lembretes"),
+                leadingIcon = Icons.Outlined.Notifications,
+                trailingText = activeReminders?.let {
+                    lang.pick3(
+                        if (it == 1) "1 activo" else "$it activos",
+                        "$it on",
+                        if (it == 1) "1 ativo" else "$it ativos"
+                    )
+                },
+                onClick = onOpenReminders,
+                modifier = Modifier.testTag("open_reminders")
+            )
+        }
+        if (!compact) {
+            Text(
+                text = lang.pick3(
+                    "Ángelus, Coronilla, oración de la mañana y de la noche.",
+                    "Angelus, Chaplet, morning and night prayer.",
+                    "Angelus, Coronilha, oração da manhã e da noite."
+                ),
+                style = styles.footnote,
+                color = p.textSecondary,
+                modifier = Modifier.padding(horizontal = design.spacing.gutter + 18.dp, vertical = 8.dp)
+            )
+        }
+    }
+
+    // Landscape phone: the 260dp hero plus the 216dp ring fill a 390dp-tall
+    // screen before the first practice appears. Today's progress becomes a
+    // fixed left pane; the rule checklist and the fidelity history own the
+    // right pane's single scroll, with the temptation controls pinned below.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding())
+        ) {
+            LandscapeTwoPane(
+                form = form,
+                modifier = Modifier.fillMaxSize(),
+                leftWidthFraction = 0.34f,
+                left = {
+                    PaneSurface(contentPadding = PaddingValues(12.dp)) {
+                        Column(Modifier.fillMaxSize()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        text = title,
+                                        style = styles.title2,
+                                        color = p.textPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.testTag("habits_title")
+                                    )
+                                    Text(
+                                        text = longDate(today, lang),
+                                        style = styles.footnote,
+                                        color = p.textSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                AppGlassIconButton(
+                                    icon = Icons.Outlined.BarChart,
+                                    contentDescription = lang.pick3("Resumen", "Summary", "Resumo"),
+                                    onClick = onOpenSummary,
+                                    tag = "habits_stats_button"
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            TodayRing(
+                                done = keptIds.size,
+                                total = DailyRule.size,
+                                loaded = loaded,
+                                lang = lang,
+                                ringSize = if (form.heightDp < 380.dp) 96.dp else 112.dp,
+                                ringStroke = 10.dp,
+                                compact = true
+                            )
+                            Spacer(Modifier.weight(1f))
+                            remindersBlock(true)
+                        }
+                    }
+                },
+                right = {
+                    Column(Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = state,
+                            modifier = Modifier.weight(1f).fillMaxWidth().testTag("tab_habits_rule"),
+                            contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
+                        ) {
+                            item(key = "habit_save_notice") { saveNotice() }
+                            DailyRule.groups.forEachIndexed { groupIndex, habits ->
+                                item(key = "group_header_$groupIndex") {
+                                    val kept = habits.count { it.id in keptIds }
+                                    GroupHeader(
+                                        title = DailyRule.groupLabel(groupIndex, lang),
+                                        trailing = lang.pick3("$kept de ${habits.size}", "$kept of ${habits.size}", "$kept de ${habits.size}"),
+                                        topGap = if (groupIndex == 0) 4.dp else 18.dp
+                                    )
+                                }
+                                item(key = "group_$groupIndex") { groupCard(groupIndex, habits) }
+                            }
+                            item(key = "rule_note") { ruleNoteBlock() }
+                            item(key = "temptation_note") {
+                                Text(
+                                    text = temptationCardSubtitle,
+                                    style = styles.footnote,
+                                    color = p.textSecondary,
+                                    modifier = Modifier.padding(horizontal = design.spacing.gutter, vertical = 4.dp)
+                                )
+                            }
+                            item(key = "fidelity_header") {
+                                GroupHeader(
+                                    title = lang.pick3("Fidelidad", "Fidelity", "Fidelidade"),
+                                    trailing = null,
+                                    topGap = 18.dp
+                                )
+                            }
+                            item(key = "fidelity_calendar") {
+                                FidelityCalendar(
+                                    counts = ruleCounts,
+                                    currentLanguage = lang,
+                                    dailyGoal = DailyRule.size,
+                                    legacyDayTagPrefix = "habit_month_day_"
+                                )
+                            }
+                        }
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = design.spacing.gutter, end = design.spacing.gutter, bottom = 16.dp)
+                                .testTag("fidelity_card_photo")
+                        ) {
+                            Column(Modifier.fillMaxWidth().testTag("temptation_entry_card")) {
+                                Text(
+                                    text = temptationCardTitle,
+                                    style = styles.footnote,
+                                    color = p.textSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    victoryButton(Modifier.weight(1f))
+                                    fallButton(Modifier.weight(1f))
+                                }
+                                Spacer(Modifier.height(6.dp))
+                                helpButton(Modifier.fillMaxWidth())
+                            }
+                        }
+                    }
+                }
+            )
+        }
+        return
+    }
 
     LazyColumn(
         state = state,
@@ -654,50 +884,22 @@ private fun HabitsRoot(
 
         item(key = "temptation_card") {
             AppContentCard(
-                title = lang.pick3("Tentaciones y victorias", "Temptations and victories", "Tentações e vitórias"),
-                subtitle = lang.pick3(
-                    "La tentación en sí no es pecado. Tu registro es privado y opcional.",
-                    "Temptation itself is not sin. Your record is private and optional.",
-                    "A tentação em si não é pecado. Seu registro é privado e opcional."
-                ),
+                title = temptationCardTitle,
+                subtitle = temptationCardSubtitle,
                 modifier = Modifier.padding(horizontal = design.spacing.gutter, vertical = 12.dp).testTag("fidelity_card_photo"),
                 tag = "temptation_entry_card"
             ) {
-                AppSecondaryCapsule(
-                    label = lang.pick3("Registrar victoria", "Record victory", "Registrar vitória"),
-                    onClick = onVictory,
-                    fillWidth = true,
-                    tag = "habits_record_victory"
-                )
+                victoryButton(Modifier)
                 Spacer(Modifier.height(8.dp))
-                AppSecondaryCapsule(
-                    label = lang.pick3("Registrar caída", "Record a fall", "Registrar queda"),
-                    onClick = onFall,
-                    fillWidth = true,
-                    tag = "habits_record_fall"
-                )
+                fallButton(Modifier)
                 Spacer(Modifier.height(8.dp))
-                AppSecondaryCapsule(
-                    label = lang.pick3("Cómo vencer una tentación", "Help to overcome temptation", "Como vencer uma tentação"),
-                    onClick = onOpenTemptation,
-                    fillWidth = true,
-                    tag = "open_temptation"
-                )
+                helpButton(Modifier)
             }
         }
 
         item(key = "ring") {
             TodayRing(done = keptIds.size, total = DailyRule.size, loaded = loaded, lang = lang)
-            Text(
-                lang.pick3(
-                    "Una propuesta para tu oración personal. Leer las lecturas no sustituye la obligación de la Misa dominical.",
-                    "A suggested personal rule of prayer. Scripture reading does not replace the Sunday Mass obligation.",
-                    "Uma proposta para a sua oração pessoal. Ler as leituras não substitui a obrigação da Missa dominical."
-                ),
-                style = styles.footnote,
-                color = p.textSecondary,
-                modifier = Modifier.padding(horizontal = design.spacing.gutter, vertical = 12.dp)
-            )
+            ruleNoteBlock()
         }
 
         DailyRule.groups.forEachIndexed { groupIndex, habits ->
@@ -709,24 +911,7 @@ private fun HabitsRoot(
                     topGap = if (groupIndex == 0) 28.dp else design.spacing.sectionGap
                 )
             }
-            item(key = "group_$groupIndex") {
-                AppListGroup(
-                    modifier = Modifier.testTag(
-                        if (groupIndex == 0) "habits_checklist_card" else "habits_checklist_card_$groupIndex"
-                    )
-                ) {
-                    habits.forEachIndexed { i, habit ->
-                        RuleRow(
-                            habit = habit,
-                            checked = habit.id in keptIds,
-                            lang = lang,
-                            onToggle = { onToggle(habit.id) },
-                            onOpen = if (habit.action != DailyHabitAction.NONE) ({ onOpen(habit.action) }) else null,
-                            showDivider = i < habits.lastIndex
-                        )
-                    }
-                }
-            }
+            item(key = "group_$groupIndex") { groupCard(groupIndex, habits) }
         }
 
         item(key = "fidelity_header") {
@@ -747,38 +932,22 @@ private fun HabitsRoot(
 
         item(key = "reminders") {
             Spacer(Modifier.height(design.spacing.sectionGap + 4.dp))
-            AppListGroup {
-                AppListRow(
-                    title = lang.pick3("Recordatorios", "Reminders", "Lembretes"),
-                    leadingIcon = Icons.Outlined.Notifications,
-                    trailingText = activeReminders?.let {
-                        lang.pick3(
-                            if (it == 1) "1 activo" else "$it activos",
-                            "$it on",
-                            if (it == 1) "1 ativo" else "$it ativos"
-                        )
-                    },
-                    onClick = onOpenReminders,
-                    modifier = Modifier.testTag("open_reminders")
-                )
-            }
-            Text(
-                text = lang.pick3(
-                    "Ángelus, Coronilla, oración de la mañana y de la noche.",
-                    "Angelus, Chaplet, morning and night prayer.",
-                    "Angelus, Coronilha, oração da manhã e da noite."
-                ),
-                style = styles.footnote,
-                color = p.textSecondary,
-                modifier = Modifier.padding(horizontal = design.spacing.gutter + 18.dp, vertical = 8.dp)
-            )
+            remindersBlock(false)
         }
     }
 }
 
 /** Today's ring: gradient arc, growing sprout, "3/12" and one line of encouragement. */
 @Composable
-private fun TodayRing(done: Int, total: Int, loaded: Boolean, lang: AppLanguage) {
+private fun TodayRing(
+    done: Int,
+    total: Int,
+    loaded: Boolean,
+    lang: AppLanguage,
+    ringSize: Dp = 216.dp,
+    ringStroke: Dp = 20.dp,
+    compact: Boolean = false
+) {
     val design = LocalAppDesign.current
     val p = design.palette
     val styles = LocalAppTextStyles.current
@@ -798,17 +967,17 @@ private fun TodayRing(done: Int, total: Int, loaded: Boolean, lang: AppLanguage)
     ) {
         LumenGradientRing(
             progress = if (loaded) fraction else 0f,
-            size = 216.dp,
-            stroke = 20.dp,
+            size = ringSize,
+            stroke = ringStroke,
             modifier = Modifier
                 .clearAndSetSemantics { contentDescription = description }
                 .testTag("habits_today_ring")
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Sprout(Modifier.size(30.dp).graphicsLayer { scaleX = sproutScale; scaleY = sproutScale })
+                Sprout(Modifier.size(if (compact) 18.dp else 30.dp).graphicsLayer { scaleX = sproutScale; scaleY = sproutScale })
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
-                    val numeral = styles.display.copy(
+                    val numeral = if (compact) styles.title2.copy(fontFeatureSettings = "tnum") else styles.display.copy(
                         fontSize = styles.display.fontSize * 1.18f,
                         lineHeight = styles.display.fontSize * 1.24f,
                         fontWeight = FontWeight.Light,
@@ -819,12 +988,12 @@ private fun TodayRing(done: Int, total: Int, loaded: Boolean, lang: AppLanguage)
                 }
                 Text(
                     text = lang.pick3("Hábitos de hoy", "Today's habits", "Hábitos de hoje"),
-                    style = styles.subhead,
+                    style = if (compact) styles.caption else styles.subhead,
                     color = p.textSecondary
                 )
             }
         }
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(if (compact) 10.dp else 18.dp))
         val message = when {
             fraction >= 1f -> lang.pick3(
                 "Has marcado las prácticas de hoy.",
@@ -845,11 +1014,11 @@ private fun TodayRing(done: Int, total: Int, loaded: Boolean, lang: AppLanguage)
         Crossfade(targetState = message, animationSpec = tween(if (design.reduceMotion) 0 else 300), label = "message") { m ->
             Text(
                 text = m,
-                style = styles.subhead,
+                style = if (compact) styles.footnote else styles.subhead,
                 color = p.textSecondary,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = if (compact) 4.dp else 40.dp)
             )
         }
     }
@@ -1056,6 +1225,156 @@ private fun SummaryPage(
     val activeDays = pairs.map { it.second }.distinct().size
     val daysPerHabit = remember(pairs) { pairs.groupingBy { it.first }.eachCount() }
     val monthRate = if (possible > 0) pairs.size / possible.toFloat() else 0f
+    val form = rememberLandscapeForm()
+
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val todayTile: @Composable (Modifier, Boolean) -> Unit = { m, compact ->
+        StatTile(
+            value = "$keptToday/${DailyRule.size}",
+            label = lang.pick3("Hoy", "Today", "Hoje"),
+            compact = compact,
+            modifier = m.semantics { stateDescription = lang.pick3("Hoy: $keptToday de ${DailyRule.size} prácticas realizadas", "Today: $keptToday of ${DailyRule.size} practices completed", "Hoje: $keptToday de ${DailyRule.size} práticas realizadas") }
+        )
+    }
+    val monthTile: @Composable (Modifier, Boolean) -> Unit = { m, compact ->
+        StatTile(
+            value = "${pairs.size}/$possible",
+            label = lang.pick3("Este mes", "This month", "Este mês"),
+            compact = compact,
+            modifier = m
+                .semantics(mergeDescendants = true) {
+                    contentDescription = lang.pick3(
+                        "Este mes: ${pairs.size} de $possible · ${daysLabel(activeDays, lang)}",
+                        "This month: ${pairs.size} of $possible · ${daysLabel(activeDays, lang)}",
+                        "Este mês: ${pairs.size} de $possible · ${daysLabel(activeDays, lang)}"
+                    )
+                }
+                .testTag("habits_monthly_summary")
+        )
+    }
+    val activeTile: @Composable (Modifier, Boolean) -> Unit = { m, compact ->
+        StatTile(
+            value = "$activeDays",
+            label = lang.pick3("Días activos", "Active days", "Dias ativos"),
+            compact = compact,
+            modifier = m
+        )
+    }
+    val progressBlock: @Composable () -> Unit = {
+        Column {
+            AppProgressBar(
+                progress = monthRate,
+                color = p.success,
+                modifier = Modifier.semantics { stateDescription = lang.pick3("${pairs.size} de $possible prácticas realizadas", "${pairs.size} of $possible practices completed", "${pairs.size} de $possible práticas realizadas") }
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = lang.pick3(
+                    "${(monthRate * 100).toInt()} % de lo posible hasta hoy",
+                    "${(monthRate * 100).toInt()}% of what was possible so far",
+                    "${(monthRate * 100).toInt()} % do possível até hoje"
+                ),
+                style = styles.footnote,
+                color = p.textSecondary
+            )
+        }
+    }
+    val summaryGroupCard: @Composable (List<DailyHabit>) -> Unit = { habits ->
+        AppListGroup {
+            habits.forEachIndexed { i, habit ->
+                val days = daysPerHabit[habit.id] ?: 0
+                PracticeMonthRow(
+                    title = habit.title(lang),
+                    days = days,
+                    elapsed = elapsed,
+                    lang = lang,
+                    showDivider = i < habits.lastIndex
+                )
+            }
+        }
+    }
+    val footerBlock: @Composable () -> Unit = {
+        Text(
+            text = if (pairs.isEmpty()) lang.pick3(
+                "Cada práctica cuenta desde hoy.",
+                "Every practice counts from today.",
+                "Cada prática conta a partir de hoje."
+            ) else lang.pick3(
+                "Días de este mes en que cumpliste cada práctica.",
+                "Days this month on which you kept each practice.",
+                "Dias deste mês em que cumpriu cada prática."
+            ),
+            style = styles.footnote,
+            color = p.textSecondary,
+            modifier = Modifier.padding(horizontal = design.spacing.gutter + 18.dp, vertical = 10.dp)
+        )
+    }
+
+    // Landscape phone: the 230dp art header fills a 390dp-tall screen. The
+    // month's metrics become a fixed left pane; the per-practice history owns
+    // the right pane's single scroll.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding())
+        ) {
+            LandscapeTwoPane(
+                form = form,
+                modifier = Modifier.fillMaxSize(),
+                leftWidthFraction = 0.34f,
+                left = {
+                    PaneSurface(contentPadding = PaddingValues(12.dp)) {
+                        Column(Modifier.fillMaxSize()) {
+                            Text(
+                                text = title,
+                                style = styles.title2,
+                                color = p.textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.testTag("summary_title")
+                            )
+                            Text(
+                                text = monthTitle(month, calendarLocale(lang)),
+                                style = styles.footnote,
+                                color = p.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(Modifier.weight(1f))
+                            todayTile(Modifier.fillMaxWidth(), true)
+                            Spacer(Modifier.height(8.dp))
+                            monthTile(Modifier.fillMaxWidth(), true)
+                            Spacer(Modifier.height(8.dp))
+                            activeTile(Modifier.fillMaxWidth(), true)
+                            Spacer(Modifier.height(12.dp))
+                            progressBlock()
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
+                },
+                right = {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().testTag("daily_completion_control"),
+                        contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp)
+                    ) {
+                        DailyRule.groups.forEachIndexed { g, habits ->
+                            item(key = "summary_group_$g") {
+                                GroupHeader(
+                                    title = DailyRule.groupLabel(g, lang),
+                                    trailing = null,
+                                    topGap = if (g == 0) 4.dp else 18.dp
+                                )
+                                summaryGroupCard(habits)
+                            }
+                        }
+                        item(key = "summary_footer") { footerBlock() }
+                    }
+                }
+            )
+        }
+        return
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("daily_completion_control"),
@@ -1075,47 +1394,13 @@ private fun SummaryPage(
                 Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                StatTile(
-                    value = "$keptToday/${DailyRule.size}",
-                    label = lang.pick3("Hoy", "Today", "Hoje"),
-                    modifier = Modifier.weight(1f).semantics { stateDescription = lang.pick3("Hoy: $keptToday de ${DailyRule.size} prácticas realizadas", "Today: $keptToday of ${DailyRule.size} practices completed", "Hoje: $keptToday de ${DailyRule.size} práticas realizadas") }
-                )
-                StatTile(
-                    value = "${pairs.size}/$possible",
-                    label = lang.pick3("Este mes", "This month", "Este mês"),
-                    modifier = Modifier.weight(1f)
-                        .semantics(mergeDescendants = true) {
-                            contentDescription = lang.pick3(
-                                "Este mes: ${pairs.size} de $possible · ${daysLabel(activeDays, lang)}",
-                                "This month: ${pairs.size} of $possible · ${daysLabel(activeDays, lang)}",
-                                "Este mês: ${pairs.size} de $possible · ${daysLabel(activeDays, lang)}"
-                            )
-                        }
-                        .testTag("habits_monthly_summary")
-                )
-                StatTile(
-                    value = "$activeDays",
-                    label = lang.pick3("Días activos", "Active days", "Dias ativos"),
-                    modifier = Modifier.weight(1f)
-                )
+                todayTile(Modifier.weight(1f), false)
+                monthTile(Modifier.weight(1f), false)
+                activeTile(Modifier.weight(1f), false)
             }
             Spacer(Modifier.height(16.dp))
             Column(Modifier.padding(horizontal = design.spacing.gutter + 4.dp)) {
-                AppProgressBar(
-                    progress = monthRate,
-                    color = p.success,
-                    modifier = Modifier.semantics { stateDescription = lang.pick3("${pairs.size} de $possible prácticas realizadas", "${pairs.size} of $possible practices completed", "${pairs.size} de $possible práticas realizadas") }
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = lang.pick3(
-                        "${(monthRate * 100).toInt()} % de lo posible hasta hoy",
-                        "${(monthRate * 100).toInt()}% of what was possible so far",
-                        "${(monthRate * 100).toInt()} % do possível até hoje"
-                    ),
-                    style = styles.footnote,
-                    color = p.textSecondary
-                )
+                progressBlock()
             }
         }
         DailyRule.groups.forEachIndexed { g, habits ->
@@ -1125,48 +1410,22 @@ private fun SummaryPage(
                     trailing = null,
                     topGap = design.spacing.sectionGap
                 )
-                AppListGroup {
-                    habits.forEachIndexed { i, habit ->
-                        val days = daysPerHabit[habit.id] ?: 0
-                        PracticeMonthRow(
-                            title = habit.title(lang),
-                            days = days,
-                            elapsed = elapsed,
-                            lang = lang,
-                            showDivider = i < habits.lastIndex
-                        )
-                    }
-                }
+                summaryGroupCard(habits)
             }
         }
-        item(key = "summary_footer") {
-            Text(
-                text = if (pairs.isEmpty()) lang.pick3(
-                    "Cada práctica cuenta desde hoy.",
-                    "Every practice counts from today.",
-                    "Cada prática conta a partir de hoje."
-                ) else lang.pick3(
-                    "Días de este mes en que cumpliste cada práctica.",
-                    "Days this month on which you kept each practice.",
-                    "Dias deste mês em que cumpriu cada prática."
-                ),
-                style = styles.footnote,
-                color = p.textSecondary,
-                modifier = Modifier.padding(horizontal = design.spacing.gutter + 18.dp, vertical = 10.dp)
-            )
-        }
+        item(key = "summary_footer") { footerBlock() }
     }
 }
 
 @Composable
-private fun StatTile(value: String, label: String, modifier: Modifier = Modifier) {
+private fun StatTile(value: String, label: String, modifier: Modifier = Modifier, compact: Boolean = false) {
     val design = LocalAppDesign.current
     val p = design.palette
     val styles = LocalAppTextStyles.current
     Column(
         modifier
             .lumenGlass(design.shapes.listGroup)
-            .padding(horizontal = 14.dp, vertical = 14.dp)
+            .padding(horizontal = 14.dp, vertical = if (compact) 6.dp else 14.dp)
     ) {
         Text(value, style = styles.title2.copy(fontFeatureSettings = "tnum"), color = p.textPrimary, maxLines = 1)
         Spacer(Modifier.height(2.dp))
@@ -1232,6 +1491,251 @@ private fun TemptationPage(
     AppInlineTitle(title)
     val playing by ttsManager.isPlaying.collectAsState()
     DisposableEffect(Unit) { onDispose { ttsManager.stop() } }
+    val form = rememberLandscapeForm()
+    val meta = lang.pick3(
+        "«Velad y orad para no caer en tentación» · Mt 26,41",
+        "“Watch and pray that you may not enter into temptation” · Mt 26:41",
+        "«Vigiai e orai para não cairdes em tentação» · Mt 26,41"
+    )
+
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val contextBlock: @Composable (Boolean) -> Unit = { compact ->
+        Text(
+            lang.pick3(
+                "La tentación en sí no es pecado. Registrar es opcional: las cifras no juzgan tu culpabilidad ni tu santidad (CIC 2847, 1861).",
+                "Temptation itself is not sin. Recording is optional: these counts do not judge your guilt or holiness (CCC 2847, 1861).",
+                "A tentação em si não é pecado. Registrar é opcional: os números não julgam a sua culpabilidade nem a sua santidade (CIC 2847, 1861)."
+            ),
+            style = if (compact) styles.footnote else styles.callout,
+            color = p.textSecondary,
+            modifier = Modifier.testTag("temptation_context")
+        )
+    }
+    val victoryCapsule: @Composable (Modifier) -> Unit = { m ->
+        AppPrimaryCapsule(
+            label = lang.pick3("Registrar victoria", "Record victory", "Registrar vitória"),
+            onClick = onVictory,
+            modifier = m,
+            tag = "emergency_overcome_button"
+        )
+    }
+    val fallCapsule: @Composable (Modifier) -> Unit = { m ->
+        AppSecondaryCapsule(
+            label = lang.pick3("Registrar caída", "Record a fall", "Registrar queda"),
+            onClick = onFall,
+            modifier = m,
+            fillWidth = true,
+            tag = "temptation_fell_button"
+        )
+    }
+    val privacyNote: @Composable (Boolean) -> Unit = { compact ->
+        Text(
+            text = lang.pick3(
+                "Anótalo solo para ti: queda en este dispositivo.",
+                "Noted only for you: it stays on this device.",
+                "Anotado só para si: fica neste dispositivo."
+            ),
+            style = styles.footnote,
+            color = p.textSecondary,
+            textAlign = TextAlign.Center,
+            maxLines = if (compact) 1 else Int.MAX_VALUE,
+            overflow = if (compact) TextOverflow.Ellipsis else TextOverflow.Clip,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = if (compact) 0.dp else design.spacing.gutter, vertical = if (compact) 4.dp else 10.dp)
+        )
+    }
+    val prayNowBlock: @Composable () -> Unit = {
+        Column(
+            Modifier
+                .padding(horizontal = design.spacing.gutter)
+                .lumenGlass(design.shapes.card)
+                .padding(20.dp)
+                .testTag("temptation_prayer_card")
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        lang.pick3("Detente. Respira. Reza.", "Stop. Breathe. Pray.", "Pare. Respire. Reze."),
+                        style = styles.eyebrow,
+                        color = p.textSecondary
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(lang.pick3("Ave María", "Hail Mary", "Ave Maria"), style = styles.title2, color = p.textPrimary)
+                }
+                AppRoundPlayButton(
+                    playing = playing,
+                    onClick = {
+                        if (playing) ttsManager.stop() else {
+                            ttsManager.setLanguage(lang)
+                            ttsManager.speakSingle(hailMary(lang), isFemaleVoice = true, title = lang.pick3("Ave María", "Hail Mary", "Ave Maria"))
+                        }
+                    },
+                    contentDescription = lang.pick3("Escuchar oración", "Listen to the prayer", "Ouvir a oração"),
+                    tag = "temptation_listen"
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(hailMary(lang), style = styles.reading, color = p.textPrimary)
+        }
+    }
+    val virtuesBlock: @Composable () -> Unit = {
+        AppListGroup {
+            catalog.forEach { option ->
+                val count = sinLogs.count { it.sinKey == option.sinKey }
+                AppListRow(
+                    title = option.counterVirtue.get(lang),
+                    subtitle = option.title.get(lang),
+                    trailingText = if (count > 0) count.toString() else null,
+                    onClick = { onRoot(option) },
+                    modifier = Modifier
+                        .semantics {
+                            if (count > 0) stateDescription = lang.pick3("$count victorias", "$count victories", "$count vitórias")
+                        }
+                        .testTag("card_overcome_${option.sinKey}")
+                )
+            }
+        }
+        Text(
+            text = lang.pick3(
+                "Elige una para leer un consejo, cultivar una virtud y rezar.",
+                "Choose one for practical guidance, a virtue to cultivate and prayer.",
+                "Escolha uma para ler um conselho, cultivar uma virtude e rezar."
+            ),
+            style = styles.footnote,
+            color = p.textSecondary,
+            modifier = Modifier.padding(horizontal = design.spacing.gutter + 18.dp, vertical = 8.dp)
+        )
+    }
+    val prayersBlock: @Composable () -> Unit = {
+        AppListGroup {
+            AppListRow(
+                title = lang.pick3("Oración a San Miguel Arcángel", "Prayer to Saint Michael", "Oração a São Miguel Arcanjo"),
+                leadingIcon = Icons.Outlined.FavoriteBorder,
+                onClick = { onOpenPrayer("st_michael") },
+                modifier = Modifier.testTag("temptation_st_michael")
+            )
+            AppListRow(
+                title = lang.pick3("Acto de contrición", "Act of contrition", "Ato de contrição"),
+                leadingIcon = Icons.Outlined.FavoriteBorder,
+                onClick = { onOpenPrayer("act_of_contrition") },
+                modifier = Modifier.testTag("temptation_contrition")
+            )
+        }
+    }
+    val historyBlock: @Composable () -> Unit = {
+        if (sinLogs.isEmpty()) {
+            Text(
+                text = lang.pick3(
+                    "Cuando venzas una tentación, quedará aquí como acción de gracias.",
+                    "When you overcome a temptation, it will stay here as thanksgiving.",
+                    "Quando vencer uma tentação, ficará aqui como ação de graças."
+                ),
+                style = styles.subhead,
+                color = p.textSecondary,
+                modifier = Modifier.padding(horizontal = design.spacing.gutter).testTag("victory_history")
+            )
+        } else {
+            AppListGroup(Modifier.testTag("victory_history")) {
+                sinLogs.take(10).forEach { log ->
+                    val option = catalog.firstOrNull { it.sinKey == log.sinKey }
+                    val virtue = option?.counterVirtue?.get(lang) ?: log.counterVirtue.takeIf { it.isNotBlank() }
+                    AppListRow(
+                        title = if (virtue != null) {
+                            lang.pick3("Victoria · $virtue", "Victory · $virtue", "Vitória · $virtue")
+                        } else {
+                            lang.pick3("Tentación vencida", "Temptation overcome", "Tentação vencida")
+                        },
+                        subtitle = log.note.takeIf { it.isNotBlank() }?.let { "«$it»" },
+                        trailingText = logDate(log.timestamp, lang),
+                        showsNavigationAffordance = false
+                    )
+                }
+            }
+        }
+    }
+
+    // Landscape phone: the 200dp art header fills a 390dp-tall screen. The
+    // verse, the pastoral context and the recording controls become a fixed
+    // left pane (controls pinned at the bottom); the prayer, the virtues, the
+    // stats and the history own the right pane's single scroll.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding())
+        ) {
+            LandscapeTwoPane(
+                form = form,
+                modifier = Modifier.fillMaxSize(),
+                leftWidthFraction = 0.36f,
+                left = {
+                    PaneSurface(contentPadding = PaddingValues(12.dp)) {
+                        Column(Modifier.fillMaxSize()) {
+                            Text(
+                                text = title,
+                                style = styles.title2,
+                                color = p.textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.testTag("temptation_title")
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = meta,
+                                style = styles.footnote,
+                                color = p.textSecondary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            contextBlock(true)
+                            Spacer(Modifier.weight(1f))
+                            victoryCapsule(Modifier.fillMaxWidth())
+                            Spacer(Modifier.height(8.dp))
+                            fallCapsule(Modifier.fillMaxWidth())
+                        }
+                    }
+                },
+                right = {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().testTag("tab_sin_avoider"),
+                        contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp)
+                    ) {
+                        item(key = "privacy") { privacyNote(false) }
+                        item(key = "pray_now") { prayNowBlock() }
+                        item(key = "virtues_header") {
+                            GroupHeader(
+                                lang.pick3("Cómo vencer cada tentación", "Help for each temptation", "Como vencer cada tentação"),
+                                null,
+                                18.dp
+                            )
+                        }
+                        item(key = "virtues") { virtuesBlock() }
+                        item(key = "stats") {
+                            GroupHeader(lang.pick3("Tu registro opcional", "Your optional record", "O seu registro opcional"), null, 18.dp)
+                            StatsGrid(lang = lang, today = today, victories = victories, falls = falls)
+                        }
+                        item(key = "calendar") {
+                            Spacer(Modifier.height(14.dp))
+                            TemptationCalendar(counts = victories, currentLanguage = lang, fellCounts = falls)
+                        }
+                        item(key = "st_michael") {
+                            Spacer(Modifier.height(12.dp))
+                            prayersBlock()
+                        }
+                        item(key = "history_header") {
+                            GroupHeader(
+                                lang.pick3("Victorias registradas", "Recorded victories", "Vitórias registradas"),
+                                if (totalVictories > 0) "$totalVictories" else null,
+                                18.dp
+                            )
+                        }
+                        item(key = "history") { historyBlock() }
+                    }
+                }
+            )
+        }
+        return
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -1243,11 +1747,7 @@ private fun TemptationPage(
             AppDetailHeader(
                 title = title,
                 assetPath = TEMPTATION_ART,
-                meta = lang.pick3(
-                    "«Velad y orad para no caer en tentación» · Mt 26,41",
-                    "“Watch and pray that you may not enter into temptation” · Mt 26:41",
-                    "«Vigiai e orai para não cairdes em tentação» · Mt 26,41"
-                ),
+                meta = meta,
                 imageHeight = 200.dp,
                 titleTag = "temptation_title"
             )
@@ -1261,75 +1761,14 @@ private fun TemptationPage(
                     .padding(top = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    lang.pick3(
-                        "La tentación en sí no es pecado. Registrar es opcional: las cifras no juzgan tu culpabilidad ni tu santidad (CIC 2847, 1861).",
-                        "Temptation itself is not sin. Recording is optional: these counts do not judge your guilt or holiness (CCC 2847, 1861).",
-                        "A tentação em si não é pecado. Registrar é opcional: os números não julgam a sua culpabilidade nem a sua santidade (CIC 2847, 1861)."
-                    ),
-                    style = styles.callout,
-                    color = p.textSecondary,
-                    modifier = Modifier.testTag("temptation_context")
-                )
-                AppPrimaryCapsule(
-                    label = lang.pick3("Registrar victoria", "Record victory", "Registrar vitória"),
-                    onClick = onVictory,
-                    tag = "emergency_overcome_button"
-                )
-                AppSecondaryCapsule(
-                    label = lang.pick3("Registrar caída", "Record a fall", "Registrar queda"),
-                    onClick = onFall,
-                    fillWidth = true,
-                    tag = "temptation_fell_button"
-                )
+                contextBlock(false)
+                victoryCapsule(Modifier)
+                fallCapsule(Modifier)
             }
-            Text(
-                text = lang.pick3(
-                    "Anótalo solo para ti: queda en este dispositivo.",
-                    "Noted only for you: it stays on this device.",
-                    "Anotado só para si: fica neste dispositivo."
-                ),
-                style = styles.footnote,
-                color = p.textSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter, vertical = 10.dp)
-            )
+            privacyNote(false)
         }
 
-        item(key = "pray_now") {
-            Column(
-                Modifier
-                    .padding(horizontal = design.spacing.gutter)
-                    .lumenGlass(design.shapes.card)
-                    .padding(20.dp)
-                    .testTag("temptation_prayer_card")
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            lang.pick3("Detente. Respira. Reza.", "Stop. Breathe. Pray.", "Pare. Respire. Reze."),
-                            style = styles.eyebrow,
-                            color = p.textSecondary
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(lang.pick3("Ave María", "Hail Mary", "Ave Maria"), style = styles.title2, color = p.textPrimary)
-                    }
-                    AppRoundPlayButton(
-                        playing = playing,
-                        onClick = {
-                            if (playing) ttsManager.stop() else {
-                                ttsManager.setLanguage(lang)
-                                ttsManager.speakSingle(hailMary(lang), isFemaleVoice = true, title = lang.pick3("Ave María", "Hail Mary", "Ave Maria"))
-                            }
-                        },
-                        contentDescription = lang.pick3("Escuchar oración", "Listen to the prayer", "Ouvir a oração"),
-                        tag = "temptation_listen"
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
-                Text(hailMary(lang), style = styles.reading, color = p.textPrimary)
-            }
-        }
+        item(key = "pray_now") { prayNowBlock() }
 
         item(key = "virtues_header") {
             GroupHeader(
@@ -1338,34 +1777,7 @@ private fun TemptationPage(
                 design.spacing.sectionGap
             )
         }
-        item(key = "virtues") {
-            AppListGroup {
-                catalog.forEach { option ->
-                    val count = sinLogs.count { it.sinKey == option.sinKey }
-                    AppListRow(
-                        title = option.counterVirtue.get(lang),
-                        subtitle = option.title.get(lang),
-                        trailingText = if (count > 0) count.toString() else null,
-                        onClick = { onRoot(option) },
-                        modifier = Modifier
-                            .semantics {
-                                if (count > 0) stateDescription = lang.pick3("$count victorias", "$count victories", "$count vitórias")
-                            }
-                            .testTag("card_overcome_${option.sinKey}")
-                    )
-                }
-            }
-            Text(
-                text = lang.pick3(
-                    "Elige una para leer un consejo, cultivar una virtud y rezar.",
-                    "Choose one for practical guidance, a virtue to cultivate and prayer.",
-                    "Escolha uma para ler um conselho, cultivar uma virtude e rezar."
-                ),
-                style = styles.footnote,
-                color = p.textSecondary,
-                modifier = Modifier.padding(horizontal = design.spacing.gutter + 18.dp, vertical = 8.dp)
-            )
-        }
+        item(key = "virtues") { virtuesBlock() }
 
         item(key = "stats") {
             GroupHeader(lang.pick3("Tu registro opcional", "Your optional record", "O seu registro opcional"), null, design.spacing.sectionGap - 8.dp)
@@ -1379,20 +1791,7 @@ private fun TemptationPage(
 
         item(key = "st_michael") {
             Spacer(Modifier.height(12.dp))
-            AppListGroup {
-                AppListRow(
-                    title = lang.pick3("Oración a San Miguel Arcángel", "Prayer to Saint Michael", "Oração a São Miguel Arcanjo"),
-                    leadingIcon = Icons.Outlined.FavoriteBorder,
-                    onClick = { onOpenPrayer("st_michael") },
-                    modifier = Modifier.testTag("temptation_st_michael")
-                )
-                AppListRow(
-                    title = lang.pick3("Acto de contrición", "Act of contrition", "Ato de contrição"),
-                    leadingIcon = Icons.Outlined.FavoriteBorder,
-                    onClick = { onOpenPrayer("act_of_contrition") },
-                    modifier = Modifier.testTag("temptation_contrition")
-                )
-            }
+            prayersBlock()
         }
 
         item(key = "history_header") {
@@ -1402,37 +1801,7 @@ private fun TemptationPage(
                 design.spacing.sectionGap
             )
         }
-        item(key = "history") {
-            if (sinLogs.isEmpty()) {
-                Text(
-                    text = lang.pick3(
-                        "Cuando venzas una tentación, quedará aquí como acción de gracias.",
-                        "When you overcome a temptation, it will stay here as thanksgiving.",
-                        "Quando vencer uma tentação, ficará aqui como ação de graças."
-                    ),
-                    style = styles.subhead,
-                    color = p.textSecondary,
-                    modifier = Modifier.padding(horizontal = design.spacing.gutter).testTag("victory_history")
-                )
-            } else {
-                AppListGroup(Modifier.testTag("victory_history")) {
-                    sinLogs.take(10).forEach { log ->
-                        val option = catalog.firstOrNull { it.sinKey == log.sinKey }
-                        val virtue = option?.counterVirtue?.get(lang) ?: log.counterVirtue.takeIf { it.isNotBlank() }
-                        AppListRow(
-                            title = if (virtue != null) {
-                                lang.pick3("Victoria · $virtue", "Victory · $virtue", "Vitória · $virtue")
-                            } else {
-                                lang.pick3("Tentación vencida", "Temptation overcome", "Tentação vencida")
-                            },
-                            subtitle = log.note.takeIf { it.isNotBlank() }?.let { "«$it»" },
-                            trailingText = logDate(log.timestamp, lang),
-                            showsNavigationAffordance = false
-                        )
-                    }
-                }
-            }
-        }
+        item(key = "history") { historyBlock() }
     }
 }
 

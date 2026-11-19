@@ -29,9 +29,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Church
 import androidx.compose.material.icons.outlined.Directions
@@ -57,6 +64,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.liturgy.CalendarDate
 import com.example.data.liturgy.LiturgicalCalendar
@@ -72,15 +80,25 @@ import com.example.ui.design.AppDetailHeader
 import com.example.ui.design.AppEdgeToEdge
 import com.example.ui.design.AppEmptyState
 import com.example.ui.design.AppGlassSurface
+import com.example.ui.design.AppHeroImage
 import com.example.ui.design.AppInlineTitle
 import com.example.ui.design.AppListGroup
 import com.example.ui.design.AppListRow
 import com.example.ui.design.AppPrimaryCapsule
+import com.example.ui.design.AppSecondaryButton
 import com.example.ui.design.AppSegmentedTabs
 import com.example.ui.design.AppSeasonDot
+import com.example.ui.design.CompactHeader
+import com.example.ui.design.GroupPosition
+import com.example.ui.design.LandscapeGap
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
 import com.example.ui.design.appDockInset
+import com.example.ui.design.appScreenInsets
+import com.example.ui.design.groupedItem
 import com.example.ui.design.lumenLiturgicalColor
 import com.example.ui.design.rememberFirstAsset
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
 import java.util.Locale
@@ -141,7 +159,7 @@ fun PilgrimageAndHabitsScreen(
         ) { shrineId ->
             val shrine = shrineId?.let { id -> sanctuaries.firstOrNull { it.id == id } }
             if (shrine != null) {
-                ShrineDetail(shrine = shrine, currentLanguage = currentLanguage, hero = hero)
+                ShrineDetail(shrine = shrine, currentLanguage = currentLanguage, hero = hero, onBack = { openShrineId = null })
             } else {
                 PilgrimageHome(
                     selectedTab = selectedTab,
@@ -172,21 +190,152 @@ private fun PilgrimageHome(
     val design = LocalAppDesign.current
     val dock = appDockInset()
     val title = currentLanguage.pick("Calendario y Santuarios", "Calendar & Shrines", "Calendário e Santuários")
+    val form = rememberLandscapeForm()
+
+    // Shared tab control: portrait keeps its extra gutter, landscape uses the
+    // component's own margins so the two tabs fit the narrower pane.
+    val tabsBlock: @Composable (Modifier) -> Unit = { mod ->
+        AppSegmentedTabs(
+            options = listOf(
+                currentLanguage.pick("Calendario", "Calendar", "Calendário"),
+                currentLanguage.pick("Santuarios", "Shrines", "Santuários")
+            ),
+            selectedIndex = selectedTab,
+            onSelect = onSelectTab,
+            modifier = mod
+        )
+    }
+
+    // Landscape phone: compact header and tabs stay pinned on the left, with
+    // today's celebration (calendar) or the guide's art (shrines) beneath;
+    // upcoming days and shrines spread into a 2-3 column grid on the right,
+    // the only scroll of the home page.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val insets = appScreenInsets()
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding()),
+            leftWidthFraction = 0.34f,
+            left = {
+                Column(Modifier.fillMaxSize()) {
+                    CompactHeader(title = title, form = form)
+                    LandscapeGap(form)
+                    tabsBlock(Modifier)
+                    LandscapeGap(form)
+                    if (selectedTab == PILGRIMAGE_TAB_CALENDAR && days.isNotEmpty()) {
+                        val dates = datesFor(days)
+                        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
+                            TodayCard(days.first(), dates.firstOrNull(), currentLanguage)
+                            Spacer(Modifier.height(16.dp))
+                        }
+                    } else {
+                        if (selectedTab == PILGRIMAGE_TAB_SHRINES) {
+                            ShrinesIntro(currentLanguage)
+                        }
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(horizontal = form.gutter)
+                                .clip(RoundedCornerShape(18.dp))
+                        ) {
+                            AppHeroImage(hero, Modifier.fillMaxSize(), fadeToCanvas = false, topVeil = false)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            },
+            right = {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(if (form.panes >= 3) 3 else 2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 0.dp, end = 8.dp, top = 4.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (selectedTab == PILGRIMAGE_TAB_CALENDAR) {
+                        if (days.isEmpty()) {
+                            item(key = "calendar_empty", span = { GridItemSpan(maxLineSpan) }) {
+                                CalendarEmptyState(currentLanguage)
+                            }
+                        } else {
+                            val dates = datesFor(days)
+                            val upcoming = days.drop(1).mapIndexed { i, d -> d to dates.getOrNull(i + 1) }
+                            if (upcoming.isEmpty()) {
+                                item(key = "calendar_no_upcoming", span = { GridItemSpan(maxLineSpan) }) {
+                                    Text(
+                                        currentLanguage.pick(
+                                            "No hay más celebraciones cargadas.",
+                                            "No further celebrations are loaded.",
+                                            "Não há mais celebrações carregadas."
+                                        ),
+                                        style = LocalAppTextStyles.current.footnote,
+                                        color = design.palette.textSecondary,
+                                        modifier = Modifier.padding(horizontal = design.spacing.gutter, vertical = 12.dp)
+                                    )
+                                }
+                            } else {
+                                item(key = "calendar_upcoming_title", span = { GridItemSpan(maxLineSpan) }) {
+                                    SectionHeadline(currentLanguage.pick("Próximas celebraciones", "Upcoming celebrations", "Próximas celebrações"))
+                                }
+                                val byMonth = upcoming.groupBy { (_, date) -> date?.month ?: 0 }
+                                val showMonths = byMonth.size > 1
+                                byMonth.entries.forEachIndexed { groupIndex, (month, entries) ->
+                                    if (showMonths && month != 0) {
+                                        item(key = "calendar_month_$groupIndex", span = { GridItemSpan(maxLineSpan) }) {
+                                            Text(
+                                                text = monthName(month, currentLanguage),
+                                                style = LocalAppTextStyles.current.footnote,
+                                                color = design.palette.textSecondary,
+                                                modifier = Modifier.padding(
+                                                    start = design.spacing.gutter + 4.dp,
+                                                    top = if (groupIndex == 0) 0.dp else 12.dp
+                                                )
+                                            )
+                                        }
+                                    }
+                                    itemsIndexed(entries, key = { _, pair -> "cal_${pair.first.monthName}_${pair.first.dayOfMonth}" }) { _, (day, date) ->
+                                        Box(Modifier.groupedItem(GroupPosition.Single)) {
+                                            CalendarDayRow(day, date, currentLanguage)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        if (sanctuaries.isEmpty()) {
+                            item(key = "shrines_empty", span = { GridItemSpan(maxLineSpan) }) {
+                                ShrinesEmptyState(currentLanguage)
+                            }
+                        } else {
+                            itemsIndexed(sanctuaries, key = { _, s -> "shrine_${s.id}" }) { _, shrine ->
+                                LeadRow(
+                                    title = shrine.name.get(currentLanguage),
+                                    modifier = Modifier.heightIn(min = 64.dp),
+                                    subtitle = placeLine(shrine.cityCountry.get(currentLanguage)),
+                                    leading = {
+                                        Icon(Icons.Outlined.Place, null, tint = design.palette.textSecondary, modifier = Modifier.size(20.dp))
+                                    },
+                                    onClick = { onOpenShrine(shrine) },
+                                    position = GroupPosition.Single,
+                                    tag = "shrine_card_${shrine.id}"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+        return
+    }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = dock + 24.dp)) {
         item(key = "pilgrimage_header") {
             AppDetailHeader(title = title, assetPath = hero, root = true)
         }
         item(key = "pilgrimage_tabs") {
-            AppSegmentedTabs(
-                options = listOf(
-                    currentLanguage.pick("Calendario", "Calendar", "Calendário"),
-                    currentLanguage.pick("Santuarios", "Shrines", "Santuários")
-                ),
-                selectedIndex = selectedTab,
-                onSelect = onSelectTab,
-                modifier = Modifier.padding(horizontal = design.spacing.gutter)
-            )
+            tabsBlock(Modifier.padding(horizontal = design.spacing.gutter))
             Spacer(Modifier.height(design.spacing.sectionGap - 8.dp))
         }
         if (selectedTab == PILGRIMAGE_TAB_CALENDAR) {
@@ -205,15 +354,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.calendarItems(
 ) {
     if (days.isEmpty()) {
         item(key = "calendar_empty") {
-            AppEmptyState(
-                title = language.pick("Sin celebraciones", "No celebrations", "Sem celebrações"),
-                body = language.pick(
-                    "El calendario no tiene días próximos cargados.",
-                    "The calendar has no upcoming days loaded.",
-                    "O calendário não tem dias próximos carregados."
-                ),
-                icon = Icons.Outlined.CalendarMonth
-            )
+            CalendarEmptyState(language)
         }
         return
     }
@@ -268,6 +409,51 @@ private fun SectionHeadline(text: String) {
         modifier = Modifier
             .padding(horizontal = design.spacing.gutter)
             .padding(top = design.spacing.sectionGap, bottom = 12.dp)
+    )
+}
+
+// Shared by the portrait lazy items and the landscape panes.
+
+@Composable
+private fun CalendarEmptyState(language: AppLanguage) {
+    AppEmptyState(
+        title = language.pick("Sin celebraciones", "No celebrations", "Sem celebrações"),
+        body = language.pick(
+            "El calendario no tiene días próximos cargados.",
+            "The calendar has no upcoming days loaded.",
+            "O calendário não tem dias próximos carregados."
+        ),
+        icon = Icons.Outlined.CalendarMonth
+    )
+}
+
+@Composable
+private fun ShrinesEmptyState(language: AppLanguage) {
+    AppEmptyState(
+        title = language.pick("Sin santuarios", "No shrines", "Sem santuários"),
+        body = language.pick(
+            "La guía de peregrinaciones no tiene lugares cargados.",
+            "The pilgrimage guide has no places loaded.",
+            "O guia de peregrinações não tem lugares carregados."
+        ),
+        icon = Icons.Outlined.Place
+    )
+}
+
+@Composable
+private fun ShrinesIntro(language: AppLanguage) {
+    val design = LocalAppDesign.current
+    Text(
+        text = language.pick(
+            "Lugares santos, su historia y la indulgencia plenaria que ofrecen.",
+            "Holy places, their history and the plenary indulgence they offer.",
+            "Lugares santos, a sua história e a indulgência plenária que oferecem."
+        ),
+        style = LocalAppTextStyles.current.subhead,
+        color = design.palette.textSecondary,
+        modifier = Modifier
+            .padding(horizontal = design.spacing.gutter + 4.dp)
+            .padding(bottom = 16.dp)
     )
 }
 
@@ -482,32 +668,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.shrineItems(
 ) {
     if (sanctuaries.isEmpty()) {
         item(key = "shrines_empty") {
-            AppEmptyState(
-                title = language.pick("Sin santuarios", "No shrines", "Sem santuários"),
-                body = language.pick(
-                    "La guía de peregrinaciones no tiene lugares cargados.",
-                    "The pilgrimage guide has no places loaded.",
-                    "O guia de peregrinações não tem lugares carregados."
-                ),
-                icon = Icons.Outlined.Place
-            )
+            ShrinesEmptyState(language)
         }
         return
     }
     item(key = "shrines_intro") {
-        val design = LocalAppDesign.current
-        Text(
-            text = language.pick(
-                "Lugares santos, su historia y la indulgencia plenaria que ofrecen.",
-                "Holy places, their history and the plenary indulgence they offer.",
-                "Lugares santos, a sua história e a indulgência plenária que oferecem."
-            ),
-            style = LocalAppTextStyles.current.subhead,
-            color = design.palette.textSecondary,
-            modifier = Modifier
-                .padding(horizontal = design.spacing.gutter + 4.dp)
-                .padding(bottom = 16.dp)
-        )
+        ShrinesIntro(language)
     }
     item(key = "shrines_list") {
         AppListGroup {
@@ -538,7 +704,9 @@ private fun placeLine(place: String): String {
 private fun ShrineDetail(
     shrine: CatholicPilgrimageSanctuary,
     currentLanguage: AppLanguage,
-    hero: String?
+    hero: String?,
+    /** Landscape only: the visible way back to the shrines grid. */
+    onBack: (() -> Unit)? = null
 ) {
     val design = LocalAppDesign.current
     val p = design.palette
@@ -546,7 +714,136 @@ private fun ShrineDetail(
     val context = LocalContext.current
     val dock = appDockInset()
     val name = shrine.name.get(currentLanguage)
+    val form = rememberLandscapeForm()
     AppInlineTitle(name)
+
+    // Shared blocks: portrait and landscape render exactly these sections.
+    val historyBlock: @Composable () -> Unit = {
+        ReadingSection(
+            currentLanguage.pick("Historia", "History", "História"),
+            shrine.historicalOrigin.get(currentLanguage)
+        )
+    }
+    val significanceBlock: @Composable () -> Unit = {
+        ReadingSection(
+            currentLanguage.pick("Significado espiritual", "Spiritual significance", "Significado espiritual"),
+            shrine.spiritualSignificance.get(currentLanguage)
+        )
+    }
+    val relicsBlock: @Composable () -> Unit = {
+        ReadingSection(
+            currentLanguage.pick("Reliquias y patronazgo", "Relics and patronage", "Relíquias e patrocínio"),
+            shrine.relicsAndPatron.get(currentLanguage)
+        )
+    }
+    val indulgenceBlock: @Composable () -> Unit = {
+        AppContentCard(
+            title = currentLanguage.pick("Indulgencia plenaria", "Plenary indulgence", "Indulgência plenária"),
+            icon = Icons.Outlined.Verified
+        ) {
+            Text(
+                shrine.plenaryIndulgenceNote.get(currentLanguage),
+                style = styles.reading,
+                color = p.textPrimary
+            )
+        }
+    }
+    val adviceBlock: @Composable () -> Unit = {
+        AppContentCard(
+            title = currentLanguage.pick("Consejo para el peregrino", "Advice for the pilgrim", "Conselho ao peregrino"),
+            icon = Icons.Outlined.Lightbulb
+        ) {
+            Text(
+                shrine.practicalPilgrimAdvice.get(currentLanguage),
+                style = styles.reading,
+                color = p.textPrimary
+            )
+        }
+    }
+    val coordsBlock: @Composable () -> Unit = {
+        Text(
+            text = coordinates(shrine.coordinateLatLong, currentLanguage),
+            style = styles.footnote,
+            color = p.textSecondary
+        )
+    }
+    val mapButtonBlock: @Composable () -> Unit = {
+        AppPrimaryCapsule(
+            label = currentLanguage.pick("Ver en el mapa", "View on map", "Ver no mapa"),
+            onClick = { openOnMap(context, shrine, currentLanguage) },
+            icon = Icons.Outlined.Directions,
+            tag = "shrine_map_button_${shrine.id}"
+        )
+    }
+
+    // Landscape phone: art (78-104dp), name, place, coordinates and the map
+    // button stay pinned on the left with a visible back control; the five
+    // reading sections scroll on the right at a <=640dp measure.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val insets = appScreenInsets()
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding()),
+            leftWidthFraction = 0.36f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        if (onBack != null) {
+                            AppSecondaryButton(
+                                currentLanguage.pick("Santuarios", "Shrines", "Santuários"),
+                                onBack,
+                                leadingIcon = Icons.AutoMirrored.Outlined.ArrowBack,
+                                modifier = Modifier.testTag("shrine_detail_back")
+                            )
+                            Spacer(Modifier.height(10.dp))
+                        }
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(if (form.isShortLandscape) 78.dp else 104.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                        ) {
+                            AppHeroImage(hero, Modifier.fillMaxSize(), fadeToCanvas = false, topVeil = false)
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Text(name, style = styles.title2, color = p.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Spacer(Modifier.height(3.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Place, null, tint = p.textSecondary, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                placeLine(shrine.cityCountry.get(currentLanguage)),
+                                style = styles.footnote,
+                                color = p.textSecondary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        coordsBlock()
+                        Spacer(Modifier.height(8.dp))
+                        mapButtonBlock()
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(design.spacing.sectionGap)
+                ) {
+                    item(key = "shrine_history") { historyBlock() }
+                    item(key = "shrine_significance") { significanceBlock() }
+                    item(key = "shrine_relics") { relicsBlock() }
+                    item(key = "shrine_indulgence") { indulgenceBlock() }
+                    item(key = "shrine_advice") { adviceBlock() }
+                }
+            }
+        )
+        return
+    }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = dock + 24.dp)) {
         item(key = "shrine_header") {
@@ -563,49 +860,13 @@ private fun ShrineDetail(
                 Modifier.padding(horizontal = design.spacing.gutter),
                 verticalArrangement = Arrangement.spacedBy(design.spacing.sectionGap)
             ) {
-                ReadingSection(
-                    currentLanguage.pick("Historia", "History", "História"),
-                    shrine.historicalOrigin.get(currentLanguage)
-                )
-                ReadingSection(
-                    currentLanguage.pick("Significado espiritual", "Spiritual significance", "Significado espiritual"),
-                    shrine.spiritualSignificance.get(currentLanguage)
-                )
-                ReadingSection(
-                    currentLanguage.pick("Reliquias y patronazgo", "Relics and patronage", "Relíquias e patrocínio"),
-                    shrine.relicsAndPatron.get(currentLanguage)
-                )
-                AppContentCard(
-                    title = currentLanguage.pick("Indulgencia plenaria", "Plenary indulgence", "Indulgência plenária"),
-                    icon = Icons.Outlined.Verified
-                ) {
-                    Text(
-                        shrine.plenaryIndulgenceNote.get(currentLanguage),
-                        style = styles.reading,
-                        color = p.textPrimary
-                    )
-                }
-                AppContentCard(
-                    title = currentLanguage.pick("Consejo para el peregrino", "Advice for the pilgrim", "Conselho ao peregrino"),
-                    icon = Icons.Outlined.Lightbulb
-                ) {
-                    Text(
-                        shrine.practicalPilgrimAdvice.get(currentLanguage),
-                        style = styles.reading,
-                        color = p.textPrimary
-                    )
-                }
-                Text(
-                    text = coordinates(shrine.coordinateLatLong, currentLanguage),
-                    style = styles.footnote,
-                    color = p.textSecondary
-                )
-                AppPrimaryCapsule(
-                    label = currentLanguage.pick("Ver en el mapa", "View on map", "Ver no mapa"),
-                    onClick = { openOnMap(context, shrine, currentLanguage) },
-                    icon = Icons.Outlined.Directions,
-                    tag = "shrine_map_button_${shrine.id}"
-                )
+                historyBlock()
+                significanceBlock()
+                relicsBlock()
+                indulgenceBlock()
+                adviceBlock()
+                coordsBlock()
+                mapButtonBlock()
             }
         }
     }

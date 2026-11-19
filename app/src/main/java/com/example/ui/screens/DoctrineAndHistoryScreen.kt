@@ -7,7 +7,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -18,9 +24,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.models.AppLanguage
 import com.example.data.news.NewsResult
@@ -30,6 +40,10 @@ import com.example.ui.design.AppBackHandler
 import com.example.ui.design.AppDetailHeader
 import com.example.ui.design.AppEdgeToEdge
 import com.example.ui.design.AppInlineTitle
+import com.example.ui.design.appScreenInsets
+import com.example.ui.design.rememberLandscapeForm
+import com.example.ui.theme.LocalAppDesign
+import com.example.ui.theme.LocalAppTextStyles
 
 private val defaultNewsLoader: suspend (AppLanguage) -> NewsResult =
     { VaticanNewsFetcher().latest(it, limit = 25) }
@@ -81,6 +95,44 @@ internal fun rootSpec(topTab: Int, language: AppLanguage, repository: CatholicDa
 /** The list page's art header, with the destination's own title. */
 @Composable
 internal fun RootHeader(spec: RootSpec) {
+    val form = rememberLandscapeForm()
+    // Landscape phone: the 232dp art header alone fills a 390dp-tall screen.
+    // A 44-52dp strip keeps both tags (doctrine_hero_photo, doctrine_title)
+    // and the heading semantics, and clears the status bar itself.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val design = LocalAppDesign.current
+        val styles = LocalAppTextStyles.current
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = appScreenInsets().calculateTopPadding())
+                .height(form.headerHeight)
+                .padding(horizontal = form.gutter)
+                .testTag("doctrine_hero_photo"),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    spec.title,
+                    style = styles.headline,
+                    color = design.palette.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { heading() }.testTag("doctrine_title")
+                )
+                if (form.heightDp >= 380.dp) {
+                    Text(
+                        spec.eyebrow,
+                        style = styles.footnote,
+                        color = design.palette.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+        return
+    }
     Box(Modifier.testTag("doctrine_hero_photo")) {
         AppDetailHeader(
             title = spec.title,

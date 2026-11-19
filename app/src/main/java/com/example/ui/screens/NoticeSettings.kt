@@ -2,16 +2,25 @@ package com.example.ui.screens
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.liturgy.CalendarRules
 import com.example.data.liturgy.LiturgicalCalendar
@@ -47,6 +57,7 @@ import com.example.ui.design.AppListGroup
 import com.example.ui.design.AppPrimaryCapsule
 import com.example.ui.design.AppSheet
 import com.example.ui.design.AppSwitch
+import com.example.ui.design.lumenGlass
 import com.example.ui.design.lumenPress
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
@@ -103,6 +114,20 @@ private fun groupNote(group: NoticeGroup, lang: AppLanguage) = when (group) {
         "Os avisos não mostram as suas intenções nem dados pessoais.")
 }
 
+/** The row subtitle: time plus cadence (or the chosen holy days), shared by both formats. */
+private fun noticeSubtitle(type: NoticeType, settings: NoticeSettings?, is24h: Boolean, lang: AppLanguage): String {
+    val pref = settings?.pref(type)
+    val time = clock(pref?.hour ?: type.defaultHour, pref?.minute ?: type.defaultMinute, is24h, lang)
+    val cadence = if (type == NoticeType.HOLY_DAY_OF_OBLIGATION) {
+        val chosen = settings?.obligationDays.orEmpty().size
+        (if (chosen == 0) lang.pick3("Elige los días de tu país", "Choose the days in your country", "Escolha os dias do seu país")
+        else lang.pick3("$chosen ${if (chosen == 1) "día elegido" else "días elegidos"}", "$chosen ${if (chosen == 1) "day" else "days"} chosen",
+            "$chosen ${if (chosen == 1) "dia escolhido" else "dias escolhidos"}")) + " · " +
+            lang.pick3("depende de tu conferencia episcopal", "set by your bishops' conference", "depende da sua conferência episcopal")
+    } else noticeCadence(type, lang)
+    return "$time · $cadence"
+}
+
 /** An example of what [type] says, for the sheet's preview: its next occurrence from today. */
 private fun example(type: NoticeType, settings: NoticeSettings, lang: AppLanguage): NoticeMessage? {
     val notices = NoticesCatalog.default.load() ?: return null
@@ -124,7 +149,9 @@ private fun example(type: NoticeType, settings: NoticeSettings, lang: AppLanguag
 internal fun NoticeSettingsSection(
     lang: AppLanguage,
     onFirstEnable: () -> Unit,
-    onSaved: (String) -> Unit
+    onSaved: (String) -> Unit,
+    /** True inside the Reminders landscape right pane: grid + in-pane editors. */
+    landscape: Boolean = false
 ) {
     val design = LocalAppDesign.current
     val p = design.palette
@@ -153,6 +180,203 @@ internal fun NoticeSettingsSection(
         reschedule({ store.setEnabled(type, enabled) }, lang.pick3("Aviso actualizado.", "Notice updated.", "Aviso atualizado."))
     }
 
+    // Landscape phone: the eleven notice rows plus their sheets cannot stack in
+    // ~300dp. The groups become a two-column settings grid (the pane's only
+    // scroll); tapping a notice swaps the grid for an in-pane editor whose Save
+    // capsule stays anchored, instead of a sheet that hides it below the fold.
+    if (landscape) {
+        val openNotice = sheetFor
+        val currentSettings = settings
+        Box(Modifier.fillMaxSize().testTag("notice_settings")) {
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                NoticeGroup.entries.forEach { group ->
+                    item(key = "notice_title_${group.name}") {
+                        Text(groupTitle(group, lang), style = styles.title3, color = p.textPrimary)
+                    }
+                    item(key = "notice_grid_${group.name}") {
+                        Column(
+                            Modifier.testTag("notice_group_${group.name.lowercase()}"),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val types = NoticeType.entries.filter { it.group == group }
+                            types.chunked(2).forEach { rowTypes ->
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    rowTypes.forEach { type ->
+                                        val pref = currentSettings?.pref(type)
+                                        Box(Modifier.weight(1f).lumenGlass(design.shapes.listGroup)) {
+                                            NoticeRow(
+                                                title = noticeTitle(type, lang),
+                                                subtitle = noticeSubtitle(type, currentSettings, is24h, lang),
+                                                enabled = pref?.enabled == true,
+                                                loaded = currentSettings?.available == true,
+                                                lang = lang,
+                                                tag = type.id,
+                                                onOpen = {
+                                                    if (currentSettings?.available != true) return@NoticeRow
+                                                    if (type == NoticeType.HOLY_DAY_OF_OBLIGATION && pref?.enabled == true) obligationSheet = true else sheetFor = type
+                                                },
+                                                onToggle = { toggle(type, it) },
+                                                showDivider = false
+                                            )
+                                        }
+                                    }
+                                    if (rowTypes.size == 1) Spacer(Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                    item(key = "notice_note_${group.name}") {
+                        Text(groupNote(group, lang), style = styles.footnote, color = p.textSecondary)
+                    }
+                }
+            }
+            if (openNotice != null && currentSettings != null) {
+                val pref = currentSettings.pref(openNotice)
+                var hour by remember(openNotice) { mutableIntStateOf(pref.hour) }
+                var minute by remember(openNotice) { mutableIntStateOf(pref.minute) }
+                val preview = remember(openNotice, lang) { runCatching { example(openNotice, currentSettings, lang) }.getOrNull() }
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .background(p.canvas)
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        .testTag("notice_sheet")
+                ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            noticeTitle(openNotice, lang),
+                            style = styles.headline, color = p.textPrimary,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Box(
+                            Modifier
+                                .size(44.dp)
+                                .lumenPress({ sheetFor = null }, 0.95f)
+                                .semantics { contentDescription = lang.pick3("Cerrar", "Close", "Fechar") }
+                                .testTag("notice_editor_close"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Outlined.Close, null, tint = p.textSecondary, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth().weight(1f)) {
+                        Column(Modifier.width(230.dp)) {
+                            TimeWheel(
+                                hour = pref.hour, minute = pref.minute, is24h = is24h, lang = lang,
+                                onChange = { h, m -> hour = h; minute = m },
+                                visibleItems = 3, columnWidth = 60.dp,
+                                modifier = Modifier.testTag("notice_time_wheel")
+                            )
+                            Spacer(Modifier.weight(1f))
+                            AppPrimaryCapsule(
+                                label = lang.pick3("Guardar", "Save", "Salvar"),
+                                onClick = {
+                                    val (h, m) = hour to minute
+                                    sheetFor = null
+                                    reschedule({ store.setTime(openNotice, h, m) }, lang.pick3("Horario actualizado.", "Time updated.", "Horário atualizado."))
+                                },
+                                tag = "notice_save"
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                            Text(noticeCadence(openNotice, lang), style = styles.footnote, color = p.textSecondary)
+                            preview?.let { message ->
+                                Spacer(Modifier.height(10.dp))
+                                Text(lang.pick3("Así se verá", "Preview", "Pré-visualização"), style = styles.footnote, color = p.textSecondary)
+                                Spacer(Modifier.height(8.dp))
+                                Box(Modifier.testTag("notice_preview")) { NotificationPreview(message.title, message.body, clock(hour, minute, is24h, lang)) }
+                            }
+                        }
+                    }
+                }
+            }
+            if (obligationSheet && currentSettings != null) {
+                var chosen by remember { mutableStateOf(currentSettings.obligationDays) }
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .background(p.canvas)
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        .testTag("obligation_sheet")
+                ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            noticeTitle(NoticeType.HOLY_DAY_OF_OBLIGATION, lang),
+                            style = styles.headline, color = p.textPrimary,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Box(
+                            Modifier
+                                .size(44.dp)
+                                .lumenPress({ obligationSheet = false }, 0.95f)
+                                .semantics { contentDescription = lang.pick3("Cerrar", "Close", "Fechar") }
+                                .testTag("obligation_editor_close"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Outlined.Close, null, tint = p.textSecondary, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    LazyColumn(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        item(key = "obligation_note") {
+                            Text(
+                                lang.pick3(
+                                    "Qué días son de precepto lo decide la conferencia episcopal de cada país, y puede trasladarlos al domingo. " +
+                                        "Marca solo los que se guardan donde vives; el aviso llega la víspera. Los domingos ya tienen su aviso.",
+                                    "Each bishops' conference decides which days are of obligation, and may move them to Sunday. " +
+                                        "Tick only those kept where you live; the notice comes the evening before. Sundays already have their own notice.",
+                                    "Cada conferência episcopal decide quais dias são de preceito, e pode transferi-los para o domingo. " +
+                                        "Marque só os que se guardam onde vive; o aviso chega na véspera. Os domingos já têm o seu aviso."
+                                ),
+                                style = styles.subhead, color = p.textSecondary,
+                                modifier = Modifier.testTag("obligation_note")
+                            )
+                        }
+                        item(key = "obligation_days") {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                ObligationDays.ALL.chunked(2).forEach { rowDays ->
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        rowDays.forEach { day ->
+                                            Box(Modifier.weight(1f).lumenGlass(design.shapes.listGroup)) {
+                                                NoticeRow(
+                                                    title = day.title.get(lang), subtitle = null, enabled = day.key in chosen, loaded = true, lang = lang,
+                                                    tag = "obligation_${day.key}",
+                                                    onOpen = { chosen = if (day.key in chosen) chosen - day.key else chosen + day.key },
+                                                    onToggle = { on -> chosen = if (on) chosen + day.key else chosen - day.key },
+                                                    showDivider = false
+                                                )
+                                            }
+                                        }
+                                        if (rowDays.size == 1) Spacer(Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    AppPrimaryCapsule(
+                        label = lang.pick3("Guardar", "Save", "Salvar"),
+                        onClick = {
+                            val days = chosen
+                            obligationSheet = false
+                            reschedule({ store.setObligationDays(days) }, lang.pick3("Días de precepto guardados.", "Holy days saved.", "Dias de preceito guardados."))
+                        },
+                        tag = "obligation_save"
+                    )
+                }
+            }
+        }
+        return
+    }
+
     Column(Modifier.fillMaxWidth().testTag("notice_settings")) {
         NoticeGroup.entries.forEach { group ->
             Text(groupTitle(group, lang), style = styles.title3, color = p.textPrimary,
@@ -161,17 +385,9 @@ internal fun NoticeSettingsSection(
             AppListGroup(Modifier.testTag("notice_group_${group.name.lowercase()}")) {
                 types.forEachIndexed { i, type ->
                     val pref = settings?.pref(type)
-                    val time = clock(pref?.hour ?: type.defaultHour, pref?.minute ?: type.defaultMinute, is24h, lang)
-                    val cadence = if (type == NoticeType.HOLY_DAY_OF_OBLIGATION) {
-                        val chosen = settings?.obligationDays.orEmpty().size
-                        (if (chosen == 0) lang.pick3("Elige los días de tu país", "Choose the days in your country", "Escolha os dias do seu país")
-                        else lang.pick3("$chosen ${if (chosen == 1) "día elegido" else "días elegidos"}", "$chosen ${if (chosen == 1) "day" else "days"} chosen",
-                            "$chosen ${if (chosen == 1) "dia escolhido" else "dias escolhidos"}")) + " · " +
-                            lang.pick3("depende de tu conferencia episcopal", "set by your bishops' conference", "depende da sua conferência episcopal")
-                    } else noticeCadence(type, lang)
                     NoticeRow(
                         title = noticeTitle(type, lang),
-                        subtitle = "$time · $cadence",
+                        subtitle = noticeSubtitle(type, settings, is24h, lang),
                         enabled = pref?.enabled == true,
                         loaded = settings?.available == true,
                         lang = lang,

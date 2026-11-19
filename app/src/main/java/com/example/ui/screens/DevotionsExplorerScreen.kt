@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +12,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Stop
@@ -26,6 +33,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
@@ -33,6 +41,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.data.models.AppLanguage
 import com.example.data.models.ChristManifestation
@@ -44,10 +54,18 @@ import com.example.data.repository.DevotionImageCredits
 import com.example.ui.design.AppEmptyState
 import com.example.ui.design.AppFilterChips
 import com.example.ui.design.AppFilterMenu
+import com.example.ui.design.AppHeroImage
 import com.example.ui.design.AppInlineTitle
 import com.example.ui.design.AppSearchBar
 import com.example.ui.design.AppSecondaryCapsule
 import com.example.ui.design.AppSegmentedTabs
+import com.example.ui.design.CompactHeader
+import com.example.ui.design.GroupPosition
+import com.example.ui.design.LandscapeGap
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
+import com.example.ui.design.appScreenInsets
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
 
@@ -88,6 +106,8 @@ internal fun DevotionsExplorerScreen(
     spec: RootSpec
 ) {
     val state = rememberLazyListState()
+    val styles = LocalAppTextStyles.current
+    val p = LocalAppDesign.current.palette
     var category by rememberSaveable { mutableStateOf(0) }
     var query by rememberSaveable { mutableStateOf("") }
     var region by rememberSaveable { mutableStateOf(EVERY_REGION) }
@@ -138,6 +158,124 @@ internal fun DevotionsExplorerScreen(
             listOf(region to inRegion).filter { it.second.isNotEmpty() }
         }
 
+    val form = rememberLandscapeForm()
+
+    // Shared blocks: portrait and landscape render exactly the same controls,
+    // rows and empty state, so the two form factors cannot drift apart.
+    val controlsBlock: @Composable () -> Unit = {
+        AppSegmentedTabs(
+            options = listOf(
+                language.tr("Nuestra Señora", "Our Lady", "Nossa Senhora"),
+                language.tr("Cristo", "Christ", "Cristo")
+            ),
+            selectedIndex = category,
+            onSelect = { category = it },
+            modifier = Modifier.testTag("devotions_category_picker")
+        )
+        Spacer(Modifier.height(14.dp))
+        AppSearchBar(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = language.tr("Nombre, país o santuario", "Name, country or shrine", "Nome, país ou santuário"),
+            tag = "devotions_search_input"
+        )
+        Spacer(Modifier.height(12.dp))
+        AppFilterMenu(
+            prefix = language.tr("Región", "Region", "Região"),
+            options = regionKeys.map { regionLabel(it, language) },
+            selectedIndex = regionIndex,
+            onSelect = { region = regionKeys[it] },
+            tag = "devotions_region_picker"
+        )
+    }
+    val emptyBlock: @Composable () -> Unit = {
+        AppEmptyState(
+            title = language.tr("Sin resultados", "Nothing found", "Sem resultados"),
+            body = language.tr(
+                "Prueba otro nombre o elige otra región.",
+                "Try another name, or choose a different region.",
+                "Tente outro nome ou escolha outra região."
+            ),
+            icon = Icons.Outlined.Search
+        )
+        Column(Modifier.fillMaxWidth().padding(horizontal = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            AppSecondaryCapsule(
+                label = language.tr("Ver todas", "Show all", "Ver todas"),
+                onClick = { query = ""; region = EVERY_REGION }
+            )
+        }
+    }
+    val headerBlock: @Composable (String, Int, Dp) -> Unit = { key, count, topGap ->
+        SectionHeader(
+            if (region == EVERY_REGION) regionLabel(key, language)
+            else if (category == 0) language.tr("Advocaciones marianas", "Marian titles", "Advocações marianas")
+            else language.tr("Devociones a Cristo", "Devotions to Christ", "Devoções a Cristo"),
+            trailing = "$count",
+            topGap = topGap
+        )
+    }
+    val rowBlock: @Composable (DevotionRowData, GroupPosition?) -> Unit = { m, position ->
+        LeadRow(
+            title = m.title,
+            subtitle = m.subtitle,
+            trailingText = m.year,
+            position = position,
+            onClick = { nav.open("devotion:${m.id}") },
+            tag = "devotion_card_${m.id}"
+        )
+    }
+
+    // Landscape phone: category, search and region stay pinned in the left
+    // pane; the devotions spread into a 2-3 column grid on the right, which
+    // owns the only scroll. The 232dp hero becomes a 44-52dp compact header.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val insets = appScreenInsets()
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding())
+                .testTag("devotions_explorer_screen"),
+            leftWidthFraction = 0.34f,
+            left = {
+                Column(Modifier.fillMaxSize()) {
+                    CompactHeader(title = spec.title, form = form, subtitle = spec.eyebrow)
+                    LandscapeGap(form)
+                    controlsBlock()
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        "${inRegion.size} " + language.tr("resultados", "results", "resultados"),
+                        style = styles.footnote,
+                        color = p.textSecondary,
+                        modifier = Modifier.padding(horizontal = form.gutter, vertical = 8.dp)
+                    )
+                }
+            },
+            right = {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(if (form.panes >= 3) 3 else 2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 0.dp, end = 8.dp, top = 4.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (inRegion.isEmpty()) {
+                        item(key = "empty", span = { GridItemSpan(maxLineSpan) }) { emptyBlock() }
+                    } else {
+                        grouped.forEach { (key, members) ->
+                            item(key = "h_$key", span = { GridItemSpan(maxLineSpan) }, contentType = "header") {
+                                headerBlock(key, members.size, 8.dp)
+                            }
+                            gridItemsIndexed(members, key = { _, m -> "d_${m.id}" }, contentType = { _, _ -> "devotion" }) { _, m ->
+                                rowBlock(m, GroupPosition.Single)
+                            }
+                        }
+                    }
+                }
+            }
+        )
+        return
+    }
+
     LazyColumn(
         state = state,
         modifier = Modifier.fillMaxSize().testTag("devotions_explorer_screen"),
@@ -146,70 +284,16 @@ internal fun DevotionsExplorerScreen(
         item(key = "hero", contentType = "hero") { RootHeader(spec) }
         item(key = "controls") {
             Spacer(Modifier.height(4.dp))
-            AppSegmentedTabs(
-                options = listOf(
-                    language.tr("Nuestra Señora", "Our Lady", "Nossa Senhora"),
-                    language.tr("Cristo", "Christ", "Cristo")
-                ),
-                selectedIndex = category,
-                onSelect = { category = it },
-                modifier = Modifier.testTag("devotions_category_picker")
-            )
-            Spacer(Modifier.height(14.dp))
-            AppSearchBar(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = language.tr("Nombre, país o santuario", "Name, country or shrine", "Nome, país ou santuário"),
-                tag = "devotions_search_input"
-            )
-            Spacer(Modifier.height(12.dp))
-            AppFilterMenu(
-                prefix = language.tr("Región", "Region", "Região"),
-                options = regionKeys.map { regionLabel(it, language) },
-                selectedIndex = regionIndex,
-                onSelect = { region = regionKeys[it] },
-                tag = "devotions_region_picker"
-            )
+            controlsBlock()
         }
 
         if (inRegion.isEmpty()) {
-            item(key = "empty") {
-                AppEmptyState(
-                    title = language.tr("Sin resultados", "Nothing found", "Sem resultados"),
-                    body = language.tr(
-                        "Prueba otro nombre o elige otra región.",
-                        "Try another name, or choose a different region.",
-                        "Tente outro nome ou escolha outra região."
-                    ),
-                    icon = Icons.Outlined.Search
-                )
-                Column(Modifier.fillMaxWidth().padding(horizontal = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    AppSecondaryCapsule(
-                        label = language.tr("Ver todas", "Show all", "Ver todas"),
-                        onClick = { query = ""; region = EVERY_REGION }
-                    )
-                }
-            }
+            item(key = "empty") { emptyBlock() }
         } else {
             grouped.forEach { (key, members) ->
-                item(key = "h_$key", contentType = "header") {
-                    SectionHeader(
-                        if (region == EVERY_REGION) regionLabel(key, language)
-                        else if (category == 0) language.tr("Advocaciones marianas", "Marian titles", "Advocações marianas")
-                        else language.tr("Devociones a Cristo", "Devotions to Christ", "Devoções a Cristo"),
-                        trailing = "${members.size}",
-                        topGap = 24.dp
-                    )
-                }
+                item(key = "h_$key", contentType = "header") { headerBlock(key, members.size, 24.dp) }
                 itemsIndexed(members, key = { _, m -> "d_${m.id}" }, contentType = { _, _ -> "devotion" }) { i, m ->
-                    LeadRow(
-                        title = m.title,
-                        subtitle = m.subtitle,
-                        trailingText = m.year,
-                        position = groupPosition(i, members.size),
-                        onClick = { nav.open("devotion:${m.id}") },
-                        tag = "devotion_card_${m.id}"
-                    )
+                    rowBlock(m, groupPosition(i, members.size))
                 }
             }
         }
@@ -364,14 +448,14 @@ private fun DevotionPage(
     val design = LocalAppDesign.current
     val styles = LocalAppTextStyles.current
     val p = design.palette
+    val form = rememberLandscapeForm()
     LaunchedEffect(Unit) { nav.voice.prepare() }
-    ReaderPage(
-        title = title,
-        eyebrow = eyebrow,
-        meta = alias,
-        pageTag = "devotion_detail_$id"
-    ) {
-        if (credit != null) item(key = "image_credit") {
+    // The devotion's story, read aloud; the prayer below keeps its own button.
+    val storyText = listOfNotNull(title, history, meaning?.takeIf { it.isNotBlank() }).joinToString("\n\n")
+
+    // Shared blocks: portrait and landscape render exactly these pieces.
+    val creditBlock: @Composable () -> Unit = {
+        if (credit != null) {
             val uriHandler = LocalUriHandler.current
             val url = credit.safeUrl
             Text(
@@ -382,93 +466,173 @@ private fun DevotionPage(
             )
             BlockGap(20.dp)
         }
+    }
+    val listenBlock: @Composable () -> Unit = {
+        ReaderActionRow(language, nav.voice, storyText, null, "devotion_listen_button", null, title = title)
+    }
+    val factsBlock: @Composable () -> Unit = {
+        FactsGroup(facts)
+        BlockGap(28.dp)
+    }
+    val recognitionBlock: @Composable () -> Unit = {
+        NoteCard(
+            language.tr("Reconocimiento eclesial", "Church recognition", "Reconhecimento eclesial"),
+            extras.recognition, Modifier.testTag("devotion_recognition")
+        )
+        BlockGap(28.dp)
+    }
+    val historyBlock: @Composable () -> Unit = {
+        SectionHeader(historyLabel, topGap = 0.dp)
+        ReadingParagraphs(history)
+        if (meaningLabel != null && !meaning.isNullOrBlank()) {
+            SectionHeader(meaningLabel, topGap = 28.dp)
+            ReadingParagraphs(meaning)
+        }
+        BlockGap(28.dp)
+    }
+    val practiceBlock: @Composable () -> Unit = {
+        NoteCard(
+            language.tr("Cómo se vive", "How it is lived", "Como se vive"),
+            extras.practice, Modifier.testTag("devotion_practice")
+        )
+        BlockGap(28.dp)
+    }
+    val promisesBlock: @Composable () -> Unit = {
+        GlassCard {
+            Text(
+                language.tr("Promesas", "Promises", "Promessas"), style = styles.headline,
+                color = p.textPrimary, modifier = Modifier.semantics { heading() }
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(promises, style = styles.reading.copy(fontStyle = FontStyle.Italic), color = p.textPrimary)
+            if (extras.promiseSource.isNotBlank()) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    extras.promiseSource, style = styles.footnote, color = p.textSecondary,
+                    modifier = Modifier.testTag("devotion_promise_source")
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+    }
+    val miraclesBlock: @Composable () -> Unit = {
+        NoteCard(miraclesLabel, miracles)
+        BlockGap(28.dp)
+    }
+    val prayerBlock: @Composable () -> Unit = {
+        GlassCard {
+            Text(prayerTitle, style = styles.headline, color = p.textPrimary, modifier = Modifier.semantics { heading() })
+            Spacer(Modifier.height(12.dp))
+            Text(
+                prayer,
+                style = styles.reading.copy(fontStyle = FontStyle.Italic),
+                color = p.textPrimary
+            )
+            if (extras.prayerSource.isNotBlank()) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    extras.prayerSource, style = styles.footnote, color = p.textSecondary,
+                    modifier = Modifier.testTag("devotion_prayer_source")
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            val playing = nav.voice.isReading(prayer)
+            AppSecondaryCapsule(
+                label = if (playing) language.tr("Detener", "Stop", "Parar") else language.tr("Escuchar", "Listen", "Ouvir"),
+                icon = if (playing) Icons.Outlined.Stop else Icons.Outlined.VolumeUp,
+                onClick = { if (playing) nav.voice.stop() else nav.voice.speak(prayer, title = prayerTitle) },
+                tag = "devotion_prayer_listen"
+            )
+        }
+    }
+    val sourcesBlock: @Composable () -> Unit = {
+        BlockGap(28.dp)
+        NoteCard(
+            language.tr("Fuentes", "Sources", "Fontes"),
+            extras.sources.joinToString("\n") { "• $it" }, Modifier.testTag("devotion_sources")
+        )
+    }
+
+    // Landscape phone: art (78-104dp), title and the listen control stay
+    // pinned in the left pane; the reading blocks scroll on the right at a
+    // <=640dp measure. The portrait art header never appears here.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val insets = appScreenInsets()
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding())
+                .testTag("devotion_detail_$id"),
+            leftWidthFraction = 0.36f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(if (form.isShortLandscape) 78.dp else 104.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                        ) {
+                            AppHeroImage(
+                                LocalReaderArt.current,
+                                Modifier.fillMaxSize(),
+                                fadeToCanvas = false,
+                                topVeil = false
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Text(title, style = styles.title2, color = p.textPrimary, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                        Spacer(Modifier.height(3.dp))
+                        Text(eyebrow, style = styles.footnote, color = p.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        if (alias != null) {
+                            Spacer(Modifier.height(3.dp))
+                            Text(alias, style = styles.footnote, color = p.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { listenBlock() }
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp)
+                ) {
+                    if (credit != null) item(key = "image_credit") { creditBlock() }
+                    item(key = "facts") { factsBlock() }
+                    if (extras.recognition.isNotBlank()) item(key = "recognition") { recognitionBlock() }
+                    item(key = "history") { historyBlock() }
+                    if (extras.practice.isNotBlank()) item(key = "practice") { practiceBlock() }
+                    if (promises.isNotBlank()) item(key = "promises") { promisesBlock() }
+                    if (miracles.isNotBlank()) item(key = "miracles") { miraclesBlock() }
+                    if (prayer.isNotBlank()) item(key = "prayer") { prayerBlock() }
+                    if (extras.sources.isNotEmpty()) item(key = "sources") { sourcesBlock() }
+                }
+            }
+        )
+        return
+    }
+
+    ReaderPage(
+        title = title,
+        eyebrow = eyebrow,
+        meta = alias,
+        pageTag = "devotion_detail_$id"
+    ) {
+        if (credit != null) item(key = "image_credit") { creditBlock() }
         // The devotion's story, read aloud; the prayer below keeps its own button.
-        val storyText = listOfNotNull(title, history, meaning?.takeIf { it.isNotBlank() }).joinToString("\n\n")
         item(key = "listen") {
-            ReaderActionRow(language, nav.voice, storyText, null, "devotion_listen_button", null, title = title)
+            listenBlock()
             BlockGap(20.dp)
         }
-        item(key = "facts") {
-            FactsGroup(facts)
-            BlockGap(28.dp)
-        }
-        if (extras.recognition.isNotBlank()) item(key = "recognition") {
-            NoteCard(
-                language.tr("Reconocimiento eclesial", "Church recognition", "Reconhecimento eclesial"),
-                extras.recognition, Modifier.testTag("devotion_recognition")
-            )
-            BlockGap(28.dp)
-        }
-        item(key = "history") {
-            SectionHeader(historyLabel, topGap = 0.dp)
-            ReadingParagraphs(history)
-            if (meaningLabel != null && !meaning.isNullOrBlank()) {
-                SectionHeader(meaningLabel, topGap = 28.dp)
-                ReadingParagraphs(meaning)
-            }
-            BlockGap(28.dp)
-        }
-        if (extras.practice.isNotBlank()) item(key = "practice") {
-            NoteCard(
-                language.tr("Cómo se vive", "How it is lived", "Como se vive"),
-                extras.practice, Modifier.testTag("devotion_practice")
-            )
-            BlockGap(28.dp)
-        }
-        if (promises.isNotBlank()) item(key = "promises") {
-            GlassCard {
-                Text(
-                    language.tr("Promesas", "Promises", "Promessas"), style = styles.headline,
-                    color = p.textPrimary, modifier = Modifier.semantics { heading() }
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(promises, style = styles.reading.copy(fontStyle = FontStyle.Italic), color = p.textPrimary)
-                if (extras.promiseSource.isNotBlank()) {
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        extras.promiseSource, style = styles.footnote, color = p.textSecondary,
-                        modifier = Modifier.testTag("devotion_promise_source")
-                    )
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-        }
-        if (miracles.isNotBlank()) item(key = "miracles") {
-            NoteCard(miraclesLabel, miracles)
-            BlockGap(28.dp)
-        }
-        if (prayer.isNotBlank()) item(key = "prayer") {
-            GlassCard {
-                Text(prayerTitle, style = styles.headline, color = p.textPrimary, modifier = Modifier.semantics { heading() })
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    prayer,
-                    style = styles.reading.copy(fontStyle = FontStyle.Italic),
-                    color = p.textPrimary
-                )
-                if (extras.prayerSource.isNotBlank()) {
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        extras.prayerSource, style = styles.footnote, color = p.textSecondary,
-                        modifier = Modifier.testTag("devotion_prayer_source")
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
-                val playing = nav.voice.isReading(prayer)
-                AppSecondaryCapsule(
-                    label = if (playing) language.tr("Detener", "Stop", "Parar") else language.tr("Escuchar", "Listen", "Ouvir"),
-                    icon = if (playing) Icons.Outlined.Stop else Icons.Outlined.VolumeUp,
-                    onClick = { if (playing) nav.voice.stop() else nav.voice.speak(prayer, title = prayerTitle) },
-                    tag = "devotion_prayer_listen"
-                )
-            }
-        }
-        if (extras.sources.isNotEmpty()) item(key = "sources") {
-            BlockGap(28.dp)
-            NoteCard(
-                language.tr("Fuentes", "Sources", "Fontes"),
-                extras.sources.joinToString("\n") { "• $it" }, Modifier.testTag("devotion_sources")
-            )
-        }
+        item(key = "facts") { factsBlock() }
+        if (extras.recognition.isNotBlank()) item(key = "recognition") { recognitionBlock() }
+        item(key = "history") { historyBlock() }
+        if (extras.practice.isNotBlank()) item(key = "practice") { practiceBlock() }
+        if (promises.isNotBlank()) item(key = "promises") { promisesBlock() }
+        if (miracles.isNotBlank()) item(key = "miracles") { miraclesBlock() }
+        if (prayer.isNotBlank()) item(key = "prayer") { prayerBlock() }
+        if (extras.sources.isNotEmpty()) item(key = "sources") { sourcesBlock() }
     }
 }

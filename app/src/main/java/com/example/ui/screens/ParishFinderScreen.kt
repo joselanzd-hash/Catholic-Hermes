@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.OpenInNew
@@ -29,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -37,11 +40,16 @@ import com.example.data.models.AppLanguage
 import com.example.data.repository.CatholicDataRepository
 import com.example.ui.design.AppDetailHeader
 import com.example.ui.design.AppEdgeToEdge
+import com.example.ui.design.AppHeroImage
 import com.example.ui.design.AppKitChip
 import com.example.ui.design.AppPrimaryCapsule
 import com.example.ui.design.AppSearchBar
+import com.example.ui.design.CompactHeader
+import com.example.ui.design.LandscapeTwoPane
 import com.example.ui.design.appDockInset
+import com.example.ui.design.appScreenInsets
 import com.example.ui.design.rememberFirstAsset
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
 
@@ -95,6 +103,128 @@ fun ParishFinderScreen(
             strings("adoración eucarística", "eucharistic adoration", "adoração eucarística")
     )
 
+    val form = rememberLandscapeForm()
+    val metaText = strings(
+        "Busca parroquias en Google Maps. Los resultados no son horarios verificados: confirma los horarios actuales de misa y confesión con la parroquia.",
+        "Search for parishes in Google Maps. Results are not verified schedules: confirm current Mass and Confession times with the parish.",
+        "Busque paróquias no Google Maps. Os resultados não são horários verificados: confirme os horários atuais de missa e confissão com a paróquia."
+    )
+
+    // Shared blocks: portrait and landscape render exactly the same controls.
+    val searchBlock: @Composable () -> Unit = {
+        AppSearchBar(
+            value = placeQuery,
+            onValueChange = { placeQuery = it; failed = false },
+            placeholder = strings(
+                "Ciudad, barrio o dirección",
+                "City, neighbourhood or address",
+                "Cidade, bairro ou endereço"
+            ),
+            onSubmit = { focus.clearFocus(); openMaps(parishQuery, placeQuery.trim()) },
+            tag = "parish_place_field"
+        )
+    }
+    val nearbyBlock: @Composable () -> Unit = {
+        AppPrimaryCapsule(
+            label = strings("Parroquias cerca de mí", "Parishes near me", "Paróquias perto de mim"),
+            onClick = { focus.clearFocus(); openMaps(parishQuery, "") },
+            modifier = Modifier.padding(horizontal = design.spacing.gutter),
+            icon = Icons.Outlined.NearMe,
+            tag = "gps_nearby_maps_button"
+        )
+    }
+    val mapsNoteBlock: @Composable () -> Unit = {
+        Row(
+            Modifier.padding(horizontal = design.spacing.gutter + 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Outlined.OpenInNew, null, tint = p.textSecondary, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                strings("Se abre en Google Maps", "Opens in Google Maps", "Abre no Google Maps"),
+                style = styles.footnote,
+                color = p.textSecondary
+            )
+        }
+        if (failed) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                strings("No se pudo abrir Google Maps.", "Could not open Google Maps.", "Não foi possível abrir o Google Maps."),
+                style = styles.footnote,
+                color = p.textSecondary,
+                modifier = Modifier.padding(horizontal = design.spacing.gutter + 4.dp).testTag("parish_maps_error")
+            )
+        }
+    }
+    val chipsBlock: @Composable () -> Unit = {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = design.spacing.gutter)
+                .testTag("parish_quick_chips"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            quick.forEach { (label, query) ->
+                AppKitChip(
+                    label = "$label ↗",
+                    selected = false,
+                    onClick = { focus.clearFocus(); openMaps(query, placeQuery.trim()) }
+                )
+            }
+        }
+    }
+
+    // Landscape phone: identity (compact title, 78-104dp art, the honest
+    // disclaimer) on the left; search and "near me" on top, the Maps note and
+    // quick chips anchored at the bottom of the right pane. Nothing scrolls.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val insets = appScreenInsets()
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding())
+                .testTag("parish_finder_screen"),
+            leftWidthFraction = 0.40f,
+            left = {
+                Column(Modifier.fillMaxSize()) {
+                    CompactHeader(title = strings("Parroquias", "Parishes", "Paróquias"), form = form)
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = form.gutter)
+                            .height(if (form.isShortLandscape) 78.dp else 104.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                    ) {
+                        AppHeroImage(hero, Modifier.fillMaxSize(), fadeToCanvas = false, topVeil = false)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        metaText,
+                        style = styles.footnote,
+                        color = p.textSecondary,
+                        modifier = Modifier.padding(horizontal = form.gutter)
+                    )
+                    Spacer(Modifier.weight(1f))
+                }
+            },
+            right = {
+                Column(Modifier.fillMaxSize().padding(vertical = 8.dp)) {
+                    searchBlock()
+                    Spacer(Modifier.height(12.dp))
+                    nearbyBlock()
+                    Spacer(Modifier.weight(1f))
+                    mapsNoteBlock()
+                    Spacer(Modifier.height(12.dp))
+                    chipsBlock()
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+        )
+        return
+    }
+
     LazyColumn(
         Modifier.fillMaxSize().testTag("parish_finder_screen"),
         contentPadding = PaddingValues(bottom = dock + 24.dp)
@@ -103,75 +233,20 @@ fun ParishFinderScreen(
             AppDetailHeader(
                 title = strings("Parroquias", "Parishes", "Paróquias"),
                 assetPath = hero,
-                meta = strings(
-                    "Busca parroquias en Google Maps. Los resultados no son horarios verificados: confirma los horarios actuales de misa y confesión con la parroquia.",
-                    "Search for parishes in Google Maps. Results are not verified schedules: confirm current Mass and Confession times with the parish.",
-                    "Busque paróquias no Google Maps. Os resultados não são horários verificados: confirme os horários atuais de missa e confissão com a paróquia."
-                ),
+                meta = metaText,
                 root = true
             )
             Spacer(Modifier.height(12.dp))
         }
         item(key = "parish_search") {
             Column {
-                AppSearchBar(
-                    value = placeQuery,
-                    onValueChange = { placeQuery = it; failed = false },
-                    placeholder = strings(
-                        "Ciudad, barrio o dirección",
-                        "City, neighbourhood or address",
-                        "Cidade, bairro ou endereço"
-                    ),
-                    onSubmit = { focus.clearFocus(); openMaps(parishQuery, placeQuery.trim()) },
-                    tag = "parish_place_field"
-                )
+                searchBlock()
                 Spacer(Modifier.height(12.dp))
-                AppPrimaryCapsule(
-                    label = strings("Parroquias cerca de mí", "Parishes near me", "Paróquias perto de mim"),
-                    onClick = { focus.clearFocus(); openMaps(parishQuery, "") },
-                    modifier = Modifier.padding(horizontal = design.spacing.gutter),
-                    icon = Icons.Outlined.NearMe,
-                    tag = "gps_nearby_maps_button"
-                )
+                nearbyBlock()
                 Spacer(Modifier.height(10.dp))
-                Row(
-                    Modifier.padding(horizontal = design.spacing.gutter + 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Outlined.OpenInNew, null, tint = p.textSecondary, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        strings("Se abre en Google Maps", "Opens in Google Maps", "Abre no Google Maps"),
-                        style = styles.footnote,
-                        color = p.textSecondary
-                    )
-                }
-                if (failed) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        strings("No se pudo abrir Google Maps.", "Could not open Google Maps.", "Não foi possível abrir o Google Maps."),
-                        style = styles.footnote,
-                        color = p.textSecondary,
-                        modifier = Modifier.padding(horizontal = design.spacing.gutter + 4.dp).testTag("parish_maps_error")
-                    )
-                }
+                mapsNoteBlock()
                 Spacer(Modifier.height(design.spacing.sectionGap))
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = design.spacing.gutter)
-                        .testTag("parish_quick_chips"),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    quick.forEach { (label, query) ->
-                        AppKitChip(
-                            label = "$label ↗",
-                            selected = false,
-                            onClick = { focus.clearFocus(); openMaps(query, placeQuery.trim()) }
-                        )
-                    }
-                }
+                chipsBlock()
             }
         }
     }

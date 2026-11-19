@@ -26,15 +26,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -42,6 +49,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.AlarmOff
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -70,8 +79,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -96,8 +107,11 @@ import com.example.ui.design.AppPrimaryCapsule
 import com.example.ui.design.AppSecondaryCapsule
 import com.example.ui.design.AppSheet
 import com.example.ui.design.AppSwitch
+import com.example.ui.design.LandscapeTwoPane
+import com.example.ui.design.PaneSurface
 import com.example.ui.design.lumenGlass
 import com.example.ui.design.lumenPress
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
 import kotlinx.coroutines.Dispatchers
@@ -131,7 +145,6 @@ fun RemindersScreen(
     modifier: Modifier = Modifier
 ) {
     val insets = AppEdgeToEdge()
-    AppBackHandler { onBack() }
     val lang by repository.currentLanguage.collectAsState()
     val design = LocalAppDesign.current
     val p = design.palette
@@ -280,8 +293,246 @@ fun RemindersScreen(
         }
     }
 
+    val form = rememberLandscapeForm()
+    // Landscape phone: the reminder being edited in the right pane (null = the
+    // notices/settings view). Portrait keeps its sheet and never sets this.
+    var selected by remember { mutableStateOf<DevotionReminder?>(null) }
+    AppBackHandler { if (selected != null) selected = null else onBack() }
+
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val writeStatusBlock: @Composable () -> Unit = {
+        com.example.ui.components.SaveFailureNotice("reminders",lang)
+        com.example.ui.components.SaveFailureNotice("calendar-sync",lang)
+    }
+    val readErrorBlock: @Composable () -> Unit = {
+        Column(Modifier.padding(horizontal = design.spacing.gutter, vertical = 12.dp)) {
+            Text(lang.pick3("No se pudieron aplicar los recordatorios. Reintenta antes de confiar en su programación.",
+                "Could not apply reminders. Retry before relying on the schedule.",
+                "Não foi possível aplicar os lembretes. Tente novamente antes de confiar na programação."),style=styles.body,color=p.textPrimary)
+            AppSecondaryCapsule(lang.pick3("Reintentar","Retry","Tentar novamente"),{
+                store.retryRead()
+                ReminderScheduler.rescheduleAll(app,languageCode)
+            })
+        }
+    }
+    val permissionsBlock: @Composable () -> Unit = {
+        Column(
+            Modifier
+                .padding(horizontal = design.spacing.gutter)
+                .padding(bottom = design.spacing.sectionGap - 8.dp)
+                .lumenGlass(design.shapes.listGroup)
+                .testTag("reminders_status")
+        ) {
+            if (!notificationGranted) {
+                PermissionRow(
+                    icon = Icons.Outlined.NotificationsOff,
+                    title = lang.pick3("Notificaciones desactivadas", "Notifications are off", "Notificações desativadas"),
+                    body = lang.pick3(
+                        "Los recordatorios no se verán hasta que las actives.",
+                        "Reminders won't be visible until you allow them.",
+                        "Os lembretes não serão visíveis até você permitir."
+                    ),
+                    action = lang.pick3("Activar", "Allow", "Ativar"),
+                    actionDescription = lang.pick3("Abrir ajustes de notificaciones", "Open notification settings", "Abrir configurações de notificações"),
+                    tag = "reminders_open_notification_settings",
+                    onAction = {
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            })
+                        }
+                    }
+                )
+            }
+            if (!notificationGranted && !exactAlarmGranted) {
+                Box(Modifier.fillMaxWidth().padding(start = 56.dp).height(0.5.dp).background(p.separator))
+            }
+            if (!exactAlarmGranted) {
+                PermissionRow(
+                    icon = Icons.Outlined.AlarmOff,
+                    title = lang.pick3("Alarmas exactas desactivadas", "Exact alarms are off", "Alarmes exatos desativados"),
+                    body = lang.pick3(
+                        "El sistema no permite alarmas exactas: la hora puede retrasarse.",
+                        "Exact alarms aren't allowed: the time may drift.",
+                        "Alarmes exatos não são permitidos: o horário pode atrasar."
+                    ),
+                    action = lang.pick3("Permitir", "Allow", "Permitir"),
+                    actionDescription = lang.pick3("Permitir alarmas exactas", "Allow exact alarms", "Permitir alarmes exatos"),
+                    tag = "reminders_allow_exact_alarms",
+                    onAction = {
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                data = Uri.parse("package:" + context.packageName)
+                            })
+                        }
+                    }
+                )
+            }
+        }
+    }
+    val novenaFormBlock: @Composable () -> Unit = {
+        GlassField(
+            value = novenaName,
+            onValueChange = { novenaName = it },
+            placeholder = lang.pick3("Nombre de la novena", "Novena name", "Nome da novena"),
+            tag = "novena_name",
+            singleLine = true
+        )
+        Spacer(Modifier.height(12.dp))
+        AppPrimaryCapsule(
+            label = lang.pick3("Iniciar novena", "Start novena", "Iniciar novena"),
+            onClick = {
+                val name = novenaName.trim()
+                if (name.isNotEmpty() && !readFailure) com.example.data.persistence.PersonalDataCommands.submit("reminders") { store.startNovena(name); withContext(Dispatchers.Main) { novenaName = "" } }
+            },
+            enabled = novenaName.isNotBlank(),
+            tag = "novena_start"
+        )
+    }
+    val testRowBlock: @Composable () -> Unit = {
+        AppListGroup {
+            AppListRow(
+                title = lang.pick3("Enviar notificación de prueba", "Send test notification", "Enviar notificação de teste"),
+                leadingIcon = Icons.Outlined.Notifications,
+                onClick = {
+                    val ok = runCatching {
+                        ReminderScheduler.sendTestNotification(
+                            app,
+                            lang.pick3("Notificación de prueba", "Test notification", "Notificação de teste"),
+                            lang.pick3(
+                                "Así se verán tus recordatorios de oración.",
+                                "This is what your prayer reminders look like.",
+                                "É assim que seus lembretes de oração aparecerão."
+                            )
+                        )
+                    }.getOrDefault(false)
+                    toast = if (ok) lang.pick3(
+                        "Notificación de prueba enviada: revisa tu panel de notificaciones.",
+                        "Test notification sent: check your notification panel.",
+                        "Notificação de teste enviada: verifique o painel de notificações."
+                    ) else lang.pick3(
+                        "No se pudo enviar la notificación de prueba; revisa los permisos.",
+                        "Could not send the test notification; check the permissions.",
+                        "Não foi possível enviar a notificação de teste; verifique as permissões."
+                    )
+                },
+                showsNavigationAffordance = false,
+                modifier = Modifier.testTag("test_notification")
+            )
+        }
+    }
+
     Box(modifier.fillMaxSize()) {
-        LazyColumn(
+        // Landscape phone: the angelus hero alone fills a 390dp-tall screen and
+        // every control sits below the fold. The reminder index and the novena
+        // form become a fixed left pane (the form lifts above the keyboard via
+        // imePadding); notices, status and the test action live on the right,
+        // and tapping a reminder opens its editor there with Save anchored.
+        if (form.isLandscape && form.heightDp < 500.dp) {
+            val imeVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
+            LandscapeTwoPane(
+                form = form,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding())
+                    .testTag("reminders_screen"),
+                leftWidthFraction = 0.36f,
+                left = {
+                    PaneSurface(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
+                        Column(Modifier.fillMaxSize().imePadding()) {
+                            if (!imeVisible) {
+                                Box(Modifier.semantics { contentDescription = fullTitle }) {
+                                    Text(
+                                        text = title,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = p.textPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.testTag("reminders_title")
+                                    )
+                                }
+                                if (summary != null) {
+                                    Text(summary, style = styles.footnote, color = p.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
+                            LazyColumn(
+                                Modifier.weight(1f).fillMaxWidth().testTag("reminders_list"),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                items(sorted, key = { it.id }) { reminder ->
+                                    val pref = prefs?.get(reminder.id)
+                                    val (hour, minute) = timeOf(reminder)
+                                    CompactReminderRow(
+                                        reminder = reminder,
+                                        languageCode = languageCode,
+                                        time = clock(hour, minute, is24h, lang),
+                                        enabled = pref?.enabled ?: false,
+                                        loaded = prefs != null && !readFailure,
+                                        inCalendar = reminder.id in calendarEvents,
+                                        selected = selected?.id == reminder.id,
+                                        lang = lang,
+                                        onOpen = { if (!readFailure) selected = reminder },
+                                        onToggle = { onToggle(reminder, it) }
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Column(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .semantics { contentDescription = "Novena" }
+                                    .testTag("novena_section")
+                            ) {
+                                val (loaded, active) = novenaState
+                                if (loaded && active != null) {
+                                    ActiveNovenaCompact(active, lang, onFinish = { com.example.data.persistence.PersonalDataCommands.submit("reminders") { store.clearNovena() } })
+                                } else if (loaded) {
+                                    novenaFormBlock()
+                                }
+                            }
+                        }
+                    }
+                },
+                right = {
+                    val open = selected
+                    if (open != null) {
+                        LandscapeReminderEditor(
+                            reminder = open,
+                            languageCode = languageCode,
+                            is24h = is24h,
+                            lang = lang,
+                            initial = timeOf(open),
+                            inCalendar = open.id in calendarEvents,
+                            onClose = { selected = null },
+                            onSave = { h, m -> saveTime(open, h, m); selected = null },
+                            onCalendar = { h, m -> saveTime(open, h, m); onAddToCalendar(open, h, m) }
+                        )
+                    } else {
+                        Column(Modifier.fillMaxSize().imePadding()) {
+                            writeStatusBlock()
+                            if (readFailure || schedulingError) readErrorBlock()
+                            if (!notificationGranted || !exactAlarmGranted) permissionsBlock()
+                            Box(Modifier.weight(1f)) {
+                                NoticeSettingsSection(
+                                    lang = lang,
+                                    onFirstEnable = {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission()) {
+                                            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                    },
+                                    onSaved = { toast = it },
+                                    landscape = true
+                                )
+                            }
+                            testRowBlock()
+                            Spacer(Modifier.height(8.dp))
+                        }
+                    }
+                }
+            )
+        } else LazyColumn(
             modifier = Modifier.fillMaxSize().testTag("reminders_screen"),
             contentPadding = PaddingValues(bottom = insets.calculateBottomPadding() + 24.dp)
         ) {
@@ -298,76 +549,15 @@ fun RemindersScreen(
             }
 
             item(key = "reminder_write_status") {
-                com.example.ui.components.SaveFailureNotice("reminders",lang)
-                com.example.ui.components.SaveFailureNotice("calendar-sync",lang)
+                writeStatusBlock()
             }
             if (readFailure || schedulingError) item(key = "reminder_read_error") {
-                Column(Modifier.padding(horizontal = design.spacing.gutter, vertical = 12.dp)) {
-                    Text(lang.pick3("No se pudieron aplicar los recordatorios. Reintenta antes de confiar en su programación.",
-                        "Could not apply reminders. Retry before relying on the schedule.",
-                        "Não foi possível aplicar os lembretes. Tente novamente antes de confiar na programação."),style=styles.body,color=p.textPrimary)
-                    AppSecondaryCapsule(lang.pick3("Reintentar","Retry","Tentar novamente"),{
-                        store.retryRead()
-                        ReminderScheduler.rescheduleAll(app,languageCode)
-                    })
-                }
+                readErrorBlock()
             }
 
             if (!notificationGranted || !exactAlarmGranted) {
                 item(key = "permissions_status") {
-                    Column(
-                        Modifier
-                            .padding(horizontal = design.spacing.gutter)
-                            .padding(bottom = design.spacing.sectionGap - 8.dp)
-                            .lumenGlass(design.shapes.listGroup)
-                            .testTag("reminders_status")
-                    ) {
-                        if (!notificationGranted) {
-                            PermissionRow(
-                                icon = Icons.Outlined.NotificationsOff,
-                                title = lang.pick3("Notificaciones desactivadas", "Notifications are off", "Notificações desativadas"),
-                                body = lang.pick3(
-                                    "Los recordatorios no se verán hasta que las actives.",
-                                    "Reminders won't be visible until you allow them.",
-                                    "Os lembretes não serão visíveis até você permitir."
-                                ),
-                                action = lang.pick3("Activar", "Allow", "Ativar"),
-                                actionDescription = lang.pick3("Abrir ajustes de notificaciones", "Open notification settings", "Abrir configurações de notificações"),
-                                tag = "reminders_open_notification_settings",
-                                onAction = {
-                                    runCatching {
-                                        context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                        })
-                                    }
-                                }
-                            )
-                        }
-                        if (!notificationGranted && !exactAlarmGranted) {
-                            Box(Modifier.fillMaxWidth().padding(start = 56.dp).height(0.5.dp).background(p.separator))
-                        }
-                        if (!exactAlarmGranted) {
-                            PermissionRow(
-                                icon = Icons.Outlined.AlarmOff,
-                                title = lang.pick3("Alarmas exactas desactivadas", "Exact alarms are off", "Alarmes exatos desativados"),
-                                body = lang.pick3(
-                                    "El sistema no permite alarmas exactas: la hora puede retrasarse.",
-                                    "Exact alarms aren't allowed: the time may drift.",
-                                    "Alarmes exatos não são permitidos: o horário pode atrasar."
-                                ),
-                                action = lang.pick3("Permitir", "Allow", "Permitir"),
-                                actionDescription = lang.pick3("Permitir alarmas exactas", "Allow exact alarms", "Permitir alarmes exatos"),
-                                tag = "reminders_allow_exact_alarms",
-                                onAction = {
-                                    runCatching {
-                                        context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                                            data = Uri.parse("package:" + context.packageName)
-                                        })
-                                    }
-                                }
-                            )
-                        }
-                    }
+                    permissionsBlock()
                 }
             }
 
@@ -426,23 +616,7 @@ fun RemindersScreen(
                         ActiveNovena(active, lang, onFinish = { com.example.data.persistence.PersonalDataCommands.submit("reminders") { store.clearNovena() } })
                     } else if (loaded) {
                         Column(Modifier.padding(horizontal = design.spacing.gutter)) {
-                            GlassField(
-                                value = novenaName,
-                                onValueChange = { novenaName = it },
-                                placeholder = lang.pick3("Nombre de la novena", "Novena name", "Nome da novena"),
-                                tag = "novena_name",
-                                singleLine = true
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            AppPrimaryCapsule(
-                                label = lang.pick3("Iniciar novena", "Start novena", "Iniciar novena"),
-                                onClick = {
-                                    val name = novenaName.trim()
-                                    if (name.isNotEmpty() && !readFailure) com.example.data.persistence.PersonalDataCommands.submit("reminders") { store.startNovena(name); withContext(Dispatchers.Main) { novenaName = "" } }
-                                },
-                                enabled = novenaName.isNotBlank(),
-                                tag = "novena_start"
-                            )
+                            novenaFormBlock()
                         }
                         Footnote(lang.pick3(
                             "Lleva la cuenta de los nueve días desde hoy.",
@@ -455,36 +629,7 @@ fun RemindersScreen(
 
             item(key = "test") {
                 SectionTitle(lang.pick3("Comprobar", "Check", "Verificar"))
-                AppListGroup {
-                    AppListRow(
-                        title = lang.pick3("Enviar notificación de prueba", "Send test notification", "Enviar notificação de teste"),
-                        leadingIcon = Icons.Outlined.Notifications,
-                        onClick = {
-                            val ok = runCatching {
-                                ReminderScheduler.sendTestNotification(
-                                    app,
-                                    lang.pick3("Notificación de prueba", "Test notification", "Notificação de teste"),
-                                    lang.pick3(
-                                        "Así se verán tus recordatorios de oración.",
-                                        "This is what your prayer reminders look like.",
-                                        "É assim que seus lembretes de oração aparecerão."
-                                    )
-                                )
-                            }.getOrDefault(false)
-                            toast = if (ok) lang.pick3(
-                                "Notificación de prueba enviada: revisa tu panel de notificaciones.",
-                                "Test notification sent: check your notification panel.",
-                                "Notificação de teste enviada: verifique o painel de notificações."
-                            ) else lang.pick3(
-                                "No se pudo enviar la notificación de prueba; revisa los permisos.",
-                                "Could not send the test notification; check the permissions.",
-                                "Não foi possível enviar a notificação de teste; verifique as permissões."
-                            )
-                        },
-                        showsNavigationAffordance = false,
-                        modifier = Modifier.testTag("test_notification")
-                    )
-                }
+                testRowBlock()
                 Footnote(lang.pick3(
                     "Los avisos de la app son locales. Los eventos que exportes se guardan en el calendario que elijas.",
                     "App alerts are local. Events you export are stored in the calendar you choose.",
@@ -546,19 +691,9 @@ fun RemindersScreen(
                 NotificationPreview(open.title(languageCode), open.body(languageCode), clock(hour, minute, is24h, lang))
                 Spacer(Modifier.height(18.dp))
             }
-            AppListGroup {
-                AppListRow(
-                    title = if (open.id in calendarEvents) lang.pick3("Actualizar en Google Calendar", "Update in Google Calendar", "Atualizar no Google Calendar")
-                    else lang.pick3("Elegir calendario", "Choose calendar", "Escolher calendário"),
-                    subtitle = if (open.id in calendarEvents) lang.pick3("Ya está en tu calendario", "Already in your calendar", "Já está no seu calendário") else null,
-                    leadingIcon = Icons.Outlined.CalendarMonth,
-                    onClick = {
-                        saveTime(open, hour, minute)
-                        onAddToCalendar(open, hour, minute)
-                    },
-                    showsNavigationAffordance = false,
-                    modifier = Modifier.testTag("gcal_${open.id}")
-                )
+            CalendarSyncRow(open, open.id in calendarEvents, lang) {
+                saveTime(open, hour, minute)
+                onAddToCalendar(open, hour, minute)
             }
             Column(Modifier.padding(horizontal = design.spacing.gutter)) {
                 Spacer(Modifier.height(18.dp))
@@ -751,25 +886,7 @@ private fun ActiveNovena(novena: NovenaState, lang: AppLanguage, onFinish: () ->
             )
         }
         Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            repeat(9) { i ->
-                val done = complete || i < day - 1
-                val isToday = !complete && i == day - 1
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(
-                            when {
-                                done -> p.success
-                                isToday -> p.success.copy(alpha = 0.45f)
-                                else -> p.textPrimary.copy(alpha = if (design.isDark) 0.12f else 0.08f)
-                            }
-                        )
-                )
-            }
-        }
+        NovenaProgress(day, complete)
         Spacer(Modifier.height(18.dp))
         AppSecondaryCapsule(
             label = lang.pick3("Terminar novena", "Finish novena", "Encerrar novena"),
@@ -777,6 +894,252 @@ private fun ActiveNovena(novena: NovenaState, lang: AppLanguage, onFinish: () ->
             fillWidth = true,
             tag = "novena_finish"
         )
+    }
+}
+
+/** The nine-day progress dots, shared by the full card and the compact pane. */
+@Composable
+private fun NovenaProgress(day: Int, complete: Boolean) {
+    val design = LocalAppDesign.current
+    val p = design.palette
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(9) { i ->
+            val done = complete || i < day - 1
+            val isToday = !complete && i == day - 1
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(
+                        when {
+                            done -> p.success
+                            isToday -> p.success.copy(alpha = 0.45f)
+                            else -> p.textPrimary.copy(alpha = if (design.isDark) 0.12f else 0.08f)
+                        }
+                    )
+            )
+        }
+    }
+}
+
+/**
+ * The active novena as a compact card for the fixed landscape pane: name, day,
+ * the same nine dots and the finish action, without the full card's padding.
+ */
+@Composable
+private fun ActiveNovenaCompact(novena: NovenaState, lang: AppLanguage, onFinish: () -> Unit) {
+    val design = LocalAppDesign.current
+    val p = design.palette
+    val styles = LocalAppTextStyles.current
+    val todayEpoch = LocalDate.now().toEpochDay()
+    val day = novena.dayNumber(todayEpoch)
+    val complete = novena.isComplete(todayEpoch)
+    val dayLabel = lang.pick3("Día $day de 9", "Day $day of 9", "Dia $day de 9")
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .lumenGlass(design.shapes.listGroup)
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        Text(novena.name, style = styles.subhead.copy(fontWeight = FontWeight.SemiBold), color = p.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.height(2.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (complete) {
+                Icon(Icons.Outlined.Check, null, tint = p.success, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(4.dp))
+            }
+            Text(
+                text = if (complete) lang.pick3("Completada", "Completed", "Concluída") else dayLabel,
+                style = styles.footnote,
+                color = p.textSecondary,
+                modifier = Modifier.semantics { stateDescription = dayLabel }
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        NovenaProgress(day, complete)
+        Spacer(Modifier.height(8.dp))
+        AppSecondaryCapsule(
+            label = lang.pick3("Terminar novena", "Finish novena", "Encerrar novena"),
+            onClick = onFinish,
+            fillWidth = true,
+            tag = "novena_finish"
+        )
+    }
+}
+
+/**
+ * A daily reminder as a compact index row for the fixed landscape pane: time,
+ * title and switch on one 52dp+ line, tinted when its editor is open. Keeps the
+ * same tags and semantics as the full [ReminderRow].
+ */
+@Composable
+private fun CompactReminderRow(
+    reminder: DevotionReminder,
+    languageCode: String,
+    time: String,
+    enabled: Boolean,
+    loaded: Boolean,
+    inCalendar: Boolean,
+    selected: Boolean,
+    lang: AppLanguage,
+    onOpen: () -> Unit,
+    onToggle: (Boolean) -> Unit
+) {
+    val design = LocalAppDesign.current
+    val p = design.palette
+    val styles = LocalAppTextStyles.current
+    val ink = if (enabled) p.textPrimary else p.textSecondary
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) p.selectionTint else Color.Transparent)
+            .lumenPress(onOpen, 0.985f)
+            .heightIn(min = 52.dp)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = time,
+                style = styles.subhead.copy(fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum"),
+                color = ink,
+                maxLines = 1,
+                modifier = Modifier
+                    .semantics {
+                        contentDescription = lang.pick3(
+                            "Cambiar la hora del recordatorio", "Change the reminder time", "Alterar o horário do lembrete"
+                        ) + ", $time"
+                    }
+                    .testTag("reminder_time_${reminder.id}")
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = reminder.title(languageCode),
+                    style = styles.footnote,
+                    color = p.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (inCalendar) {
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        Icons.Outlined.CalendarMonth,
+                        contentDescription = lang.pick3("En tu calendario", "In your calendar", "No seu calendário"),
+                        tint = p.textSecondary,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Box(Modifier.size(width = 52.dp, height = 44.dp), contentAlignment = Alignment.Center) {
+            if (loaded) {
+                AppSwitch(
+                    checked = enabled,
+                    onCheckedChange = onToggle,
+                    modifier = Modifier.semantics {
+                        contentDescription = if (enabled) lang.pick3("Desactivar recordatorio", "Disable reminder", "Desativar lembrete")
+                        else lang.pick3("Activar recordatorio", "Enable reminder", "Ativar lembrete")
+                    },
+                    tag = "reminder_switch_${reminder.id}"
+                )
+            }
+        }
+    }
+}
+
+/** The calendar action of the reminder editor, shared by sheet and pane. */
+@Composable
+private fun CalendarSyncRow(reminder: DevotionReminder, inCalendar: Boolean, lang: AppLanguage, onClick: () -> Unit) {
+    AppListGroup {
+        AppListRow(
+            title = if (inCalendar) lang.pick3("Actualizar en Google Calendar", "Update in Google Calendar", "Atualizar no Google Calendar")
+            else lang.pick3("Elegir calendario", "Choose calendar", "Escolher calendário"),
+            subtitle = if (inCalendar) lang.pick3("Ya está en tu calendario", "Already in your calendar", "Já está no seu calendário") else null,
+            leadingIcon = Icons.Outlined.CalendarMonth,
+            onClick = onClick,
+            showsNavigationAffordance = false,
+            modifier = Modifier.testTag("gcal_${reminder.id}")
+        )
+    }
+}
+
+/**
+ * The reminder editor as the landscape right pane: a three-row time wheel and
+ * the Save capsule anchored in a fixed column, preview and calendar beside them.
+ * Nothing essential sits behind a scroll; no keyboard is involved (wheel only).
+ */
+@Composable
+private fun LandscapeReminderEditor(
+    reminder: DevotionReminder,
+    languageCode: String,
+    is24h: Boolean,
+    lang: AppLanguage,
+    initial: Pair<Int, Int>,
+    inCalendar: Boolean,
+    onClose: () -> Unit,
+    onSave: (Int, Int) -> Unit,
+    onCalendar: (Int, Int) -> Unit
+) {
+    val design = LocalAppDesign.current
+    val p = design.palette
+    val styles = LocalAppTextStyles.current
+    var hour by remember(reminder) { mutableIntStateOf(initial.first) }
+    var minute by remember(reminder) { mutableIntStateOf(initial.second) }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .testTag("reminder_sheet")
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(reminder.title(languageCode), style = styles.headline, color = p.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(lang.pick3("Cada día", "Every day", "Todos os dias"), style = styles.footnote, color = p.textSecondary)
+            }
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .lumenPress(onClose, 0.95f)
+                    .semantics { contentDescription = lang.pick3("Cerrar", "Close", "Fechar") }
+                    .testTag("reminder_editor_close"),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Outlined.Close, null, tint = p.textSecondary, modifier = Modifier.size(20.dp))
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth().weight(1f)) {
+            Column(Modifier.width(230.dp)) {
+                TimeWheel(
+                    hour = initial.first,
+                    minute = initial.second,
+                    is24h = is24h,
+                    lang = lang,
+                    onChange = { h, m -> hour = h; minute = m },
+                    visibleItems = 3,
+                    columnWidth = 60.dp,
+                    modifier = Modifier.testTag("reminder_time_wheel")
+                )
+                Spacer(Modifier.weight(1f))
+                AppPrimaryCapsule(
+                    label = lang.pick3("Guardar", "Save", "Salvar"),
+                    onClick = { onSave(hour, minute) },
+                    tag = "reminder_save"
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                Text(lang.pick3("Así se verá", "Preview", "Pré-visualização"), style = styles.footnote, color = p.textSecondary)
+                Spacer(Modifier.height(8.dp))
+                NotificationPreview(reminder.title(languageCode), reminder.body(languageCode), clock(hour, minute, is24h, lang))
+                Spacer(Modifier.height(12.dp))
+                CalendarSyncRow(reminder, inCalendar, lang) { onCalendar(hour, minute) }
+            }
+        }
     }
 }
 
@@ -852,13 +1215,16 @@ internal fun TimeWheel(
     is24h: Boolean,
     lang: AppLanguage,
     onChange: (Int, Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Visible rows; 5 in portrait sheets, 3 in the short landscape panes. */
+    visibleItems: Int = 5,
+    columnWidth: Dp = 76.dp
 ) {
     val design = LocalAppDesign.current
     val p = design.palette
     var h by remember { mutableIntStateOf(hour) }
     var m by remember { mutableIntStateOf(minute) }
-    Box(modifier.fillMaxWidth().height(WheelItem * 5), contentAlignment = Alignment.Center) {
+    Box(modifier.fillMaxWidth().height(WheelItem * visibleItems), contentAlignment = Alignment.Center) {
         Box(
             Modifier
                 .fillMaxWidth()
@@ -874,7 +1240,9 @@ internal fun TimeWheel(
                     description = lang.pick3("Hora", "Hour", "Hora"),
                     unit = lang.pick3("horas", "hours", "horas"),
                     onSelect = { h = it; onChange(h, m) },
-                    lang = lang
+                    lang = lang,
+                    visibleItems = visibleItems,
+                    width = columnWidth
                 )
             } else {
                 val h12 = if (hour % 12 == 0) 12 else hour % 12
@@ -889,7 +1257,9 @@ internal fun TimeWheel(
                         h = (v % 12) + if (pm) 12 else 0
                         onChange(h, m)
                     },
-                    lang = lang
+                    lang = lang,
+                    visibleItems = visibleItems,
+                    width = columnWidth
                 )
             }
             Text(":", style = LocalAppTextStyles.current.title2, color = p.textPrimary, modifier = Modifier.padding(horizontal = 2.dp))
@@ -900,7 +1270,9 @@ internal fun TimeWheel(
                 description = lang.pick3("Minutos", "Minutes", "Minutos"),
                 unit = lang.pick3("minutos", "minutes", "minutos"),
                 onSelect = { m = it; onChange(h, m) },
-                lang = lang
+                lang = lang,
+                visibleItems = visibleItems,
+                width = columnWidth
             )
             if (!is24h) {
                 Spacer(Modifier.width(8.dp))
@@ -916,7 +1288,9 @@ internal fun TimeWheel(
                         h = base + if (v == 1) 12 else 0
                         onChange(h, m)
                     },
-                    lang = lang
+                    lang = lang,
+                    visibleItems = visibleItems,
+                    width = columnWidth
                 )
             }
         }
@@ -945,7 +1319,8 @@ private fun WheelColumn(
     onSelect: (Int) -> Unit,
     lang: AppLanguage,
     wrap: Boolean = true,
-    width: Dp = 76.dp
+    width: Dp = 76.dp,
+    visibleItems: Int = 5
 ) {
     val styles = LocalAppTextStyles.current
     val p = LocalAppDesign.current.palette
@@ -968,11 +1343,11 @@ private fun WheelColumn(
     LazyColumn(
         state = state,
         flingBehavior = fling,
-        contentPadding = PaddingValues(vertical = WheelItem * 2),
+        contentPadding = PaddingValues(vertical = WheelItem * (visibleItems / 2)),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(width)
-            .height(WheelItem * 5)
+            .height(WheelItem * visibleItems)
             .semantics {
                 contentDescription = description
                 stateDescription = "${label(current)} $unit".trim()

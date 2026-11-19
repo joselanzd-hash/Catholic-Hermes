@@ -219,6 +219,102 @@ fun BeginnerJourneyScreen(currentLanguage: AppLanguage, onOpenBible: () -> Unit,
     val uri = androidx.compose.ui.platform.LocalUriHandler.current
     val gutter = design.spacing.gutter
     val p = design.palette
+    val form = rememberLandscapeForm()
+
+    // Shared blocks: portrait and landscape render exactly the same pieces.
+    val progressBlock: @Composable () -> Unit = {
+        AppSegmentedProgress(count = 7, current = selected, fraction = 1f, modifier = Modifier.padding(horizontal = gutter).padding(top = 6.dp, bottom = 18.dp), height = 5.dp)
+    }
+    val stepTitleBlock: @Composable () -> Unit = {
+        Text(l.journey("Paso ${selected + 1} de 7", "Step ${selected + 1} of 7", "Passo ${selected + 1} de 7"), style = styles.eyebrow, color = p.accent)
+        Spacer(Modifier.height(4.dp))
+        Text(titles[selected], style = styles.title2, color = p.textPrimary, modifier = Modifier.semantics { heading() })
+    }
+    val stepBodyBlock: @Composable () -> Unit = {
+        Text(bodies[selected], style = styles.reading, color = p.textPrimary)
+    }
+    val actionBlock: @Composable () -> Unit = {
+        AppPrimaryCapsule(label = when(selected) { 0, 2 -> l.journey("Abrir el Evangelio", "Open the Gospel", "Abrir o Evangelho"); 1, 6 -> l.journey("Rezar", "Pray", "Rezar"); else -> l.journey("Encontrar una parroquia", "Find a parish", "Encontrar uma paróquia") }, onClick = when(selected) { 0,2 -> onOpenBible; 1,6 -> onOpenPrayer; else -> onOpenParishes }, tag = "journey_action")
+    }
+    val nextBlock: @Composable () -> Unit = {
+        AppSecondaryCapsule(l.journey("Paso siguiente", "Next step", "Próximo passo"), onClick = { selected++; store.advance(selected) }, fillWidth = true, tag = "journey_next")
+    }
+    val sourceNoteBlock: @Composable () -> Unit = {
+        Text(l.journey("Guía editorial · Fuentes: ", "Editorial guide · Sources: ", "Guia editorial · Fontes: ") + sources[selected], style = styles.footnote, color = p.textSecondary)
+    }
+    val sourceLinkBlock: @Composable () -> Unit = {
+        Row(
+            Modifier.heightIn(min = 48.dp).lumenPress({ uri.openUri(sourceUrls[selected]) }, 0.97f).testTag("journey_source"),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            Text(l.journey("Consultar la fuente", "Read the source", "Consultar a fonte"), style = styles.subhead.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = p.accent)
+            Spacer(Modifier.width(6.dp))
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.OpenInNew, null, tint = p.accent, modifier = Modifier.size(16.dp))
+        }
+    }
+    val pathBlock: @Composable () -> Unit = {
+        AppSectionHeader(l.journey("El camino", "The path", "O caminho"))
+        AppListGroup {
+            titles.forEachIndexed { index, title ->
+                AppListRow(title, trailingText = "${index + 1}", selected = selected == index, showsNavigationAffordance = false,
+                    onClick = { selected = index; store.advance(index) }, modifier = Modifier.testTag("journey_step_$index"))
+            }
+        }
+    }
+
+    // Landscape phone: the seven-step index stays pinned on the left (it
+    // scrolls inside its own pane); the step's reading scrolls on the right
+    // with the action, next and source controls anchored at the bottom.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val insets = appScreenInsets()
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding())
+                .testTag("beginner_journey_screen"),
+            leftWidthFraction = 0.36f,
+            left = {
+                Column(Modifier.fillMaxSize()) {
+                    CompactHeader(
+                        title = l.journey("Primeros pasos", "Start here", "Primeiros passos"),
+                        form = form,
+                        subtitle = l.journey("Siete pasos a tu ritmo. Puedes saltar cualquiera.", "Seven steps at your pace. You may skip any step.", "Sete passos no seu ritmo. Você pode pular qualquer um.")
+                    )
+                    progressBlock()
+                    LazyColumn(Modifier.fillMaxWidth().weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
+                        item(key = "path") { pathBlock() }
+                    }
+                }
+            },
+            right = {
+                PaneSurface(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)) {
+                    Column(Modifier.fillMaxSize()) {
+                        // The only reading scroll of the screen.
+                        LazyColumn(Modifier.fillMaxWidth().weight(1f), contentPadding = PaddingValues(bottom = 8.dp)) {
+                            item(key = "step") {
+                                Column(Modifier.widthIn(max = 640.dp)) {
+                                    stepTitleBlock()
+                                    Spacer(Modifier.height(12.dp))
+                                    stepBodyBlock()
+                                    Spacer(Modifier.height(12.dp))
+                                    sourceNoteBlock()
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(Modifier.weight(1f)) { actionBlock() }
+                            if (selected < 6) Box(Modifier.weight(1f)) { nextBlock() }
+                        }
+                        sourceLinkBlock()
+                    }
+                }
+            }
+        )
+        return
+    }
+
     LazyColumn(Modifier.fillMaxSize().padding(bottom = appScreenInsets().calculateBottomPadding()).testTag("beginner_journey_screen"), contentPadding = PaddingValues(bottom = 32.dp)) {
         item {
             AppHeroHeader(
@@ -226,42 +322,27 @@ fun BeginnerJourneyScreen(currentLanguage: AppLanguage, onOpenBible: () -> Unit,
                 title = l.journey("Primeros pasos", "Start here", "Primeiros passos"),
                 meta = l.journey("Siete pasos a tu ritmo. Puedes saltar cualquiera.", "Seven steps at your pace. You may skip any step.", "Sete passos no seu ritmo. Você pode pular qualquer um.")
             )
-            AppSegmentedProgress(count = 7, current = selected, fraction = 1f, modifier = Modifier.padding(horizontal = gutter).padding(top = 6.dp, bottom = 18.dp), height = 5.dp)
+            progressBlock()
         }
         item {
             AppCard(Modifier.padding(horizontal = gutter)) {
-                Text(l.journey("Paso ${selected + 1} de 7", "Step ${selected + 1} of 7", "Passo ${selected + 1} de 7"), style = styles.eyebrow, color = p.accent)
-                Spacer(Modifier.height(4.dp))
-                Text(titles[selected], style = styles.title2, color = p.textPrimary, modifier = Modifier.semantics { heading() })
+                stepTitleBlock()
                 Spacer(Modifier.height(12.dp))
-                Text(bodies[selected], style = styles.reading, color = p.textPrimary)
+                stepBodyBlock()
                 Spacer(Modifier.height(18.dp))
-                AppPrimaryCapsule(label = when(selected) { 0, 2 -> l.journey("Abrir el Evangelio", "Open the Gospel", "Abrir o Evangelho"); 1, 6 -> l.journey("Rezar", "Pray", "Rezar"); else -> l.journey("Encontrar una parroquia", "Find a parish", "Encontrar uma paróquia") }, onClick = when(selected) { 0,2 -> onOpenBible; 1,6 -> onOpenPrayer; else -> onOpenParishes }, tag = "journey_action")
+                actionBlock()
                 if (selected < 6) {
                     Spacer(Modifier.height(8.dp))
-                    AppSecondaryCapsule(l.journey("Paso siguiente", "Next step", "Próximo passo"), onClick = { selected++; store.advance(selected) }, fillWidth = true, tag = "journey_next")
+                    nextBlock()
                 }
                 Spacer(Modifier.height(14.dp))
-                Text(l.journey("Guía editorial · Fuentes: ", "Editorial guide · Sources: ", "Guia editorial · Fontes: ") + sources[selected], style = styles.footnote, color = p.textSecondary)
-                Row(
-                    Modifier.heightIn(min = 48.dp).lumenPress({ uri.openUri(sourceUrls[selected]) }, 0.97f).testTag("journey_source"),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    Text(l.journey("Consultar la fuente", "Read the source", "Consultar a fonte"), style = styles.subhead.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = p.accent)
-                    Spacer(Modifier.width(6.dp))
-                    androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.OpenInNew, null, tint = p.accent, modifier = Modifier.size(16.dp))
-                }
+                sourceNoteBlock()
+                sourceLinkBlock()
             }
             Spacer(Modifier.height(design.spacing.sectionGap))
         }
         item {
-            AppSectionHeader(l.journey("El camino", "The path", "O caminho"))
-            AppListGroup {
-                titles.forEachIndexed { index, title ->
-                    AppListRow(title, trailingText = "${index + 1}", selected = selected == index, showsNavigationAffordance = false,
-                        onClick = { selected = index; store.advance(index) }, modifier = Modifier.testTag("journey_step_$index"))
-                }
-            }
+            pathBlock()
         }
     }
 }
