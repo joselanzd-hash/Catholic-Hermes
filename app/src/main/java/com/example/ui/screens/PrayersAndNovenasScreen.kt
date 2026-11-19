@@ -1293,7 +1293,8 @@ internal fun PrayerDetailView(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .height(if (form.isShortLandscape) 78.dp else 104.dp)
+                                .weight(1f)
+                                .heightIn(min = if (form.isShortLandscape) 78.dp else 104.dp)
                                 .clip(RoundedCornerShape(18.dp))
                         ) {
                             AppHeroImage(
@@ -1322,7 +1323,7 @@ internal fun PrayerDetailView(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        Spacer(Modifier.weight(1f))
+                        Spacer(Modifier.height(8.dp))
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { actionBar() }
                     }
                 }
