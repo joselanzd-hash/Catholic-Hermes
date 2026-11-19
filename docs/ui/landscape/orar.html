@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Orar &middot; landscape v1</title>
+<link rel="stylesheet" href="lumen.css">
+<style>
+.phone { background: var(--canvas); }
+.pane.index { flex: 0 0 40%; min-width: 280px; border-right: 1px solid var(--separator); }
+.surface { margin: 8px; flex: 1 1 auto; min-height: 0; box-sizing: border-box;
+           border-radius: 24px; background: var(--grouped); padding: 12px;
+           display: flex; flex-direction: column; }
+.art { width: 100%; border-radius: 18px; background: var(--accent-muted);
+        flex: 1 1 auto; min-height: 104px; }
+.surface h2 { font-size: 22px; line-height: 1.25; margin: 10px 0 0; color: var(--text-1);
+              display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.meta { font-size: 12px; color: var(--text-2); line-height: 1.35; margin-top: 3px; }
+.grow { flex: 0 0 8px; }
+.bar { display: flex; gap: 10px; justify-content: center; padding-top: 10px; }
+.ico-btn { width: 44px; height: 44px; min-width: 44px; border: 1px solid var(--text-3);
+           background: var(--selection); display: inline-flex; align-items: center;
+           justify-content: center; border-radius: 999px; color: var(--text-2);
+           font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.pane.read { flex: 1; min-width: 0; }
+.pane.read .pane-body { padding: 12px 16px 16px; overflow: hidden; }
+/* tipo de lectura real de Lumen: serif EB Garamond 19/30 */
+.reading { max-width: 640px; font-family: "EB Garamond", Georgia, "Times New Roman", serif;
+           font-size: 19px; line-height: 1.58; color: var(--text-1); }
+.reading p { margin: 0; }
+.sec { font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+       color: var(--text-2); margin: 16px 0 6px; }
+.body { max-width: 640px; font-size: 15px; line-height: 1.55; color: var(--text-1); }
+.grp { border-radius: var(--r-group); background: var(--grouped); border: 1px solid var(--hairline);
+       overflow: hidden; margin-top: 4px; }
+.note { padding: 10px 14px; }
+.note .meta { margin-top: 0; }
+.nt { font-size: 14px; color: var(--text-1); margin-top: 2px; }
+.hair { height: 1px; background: var(--hairline); margin: 0 14px; }
+.phone.w740 .reading { font-size: 18px; }
+.phone.w740 .surface h2 { font-size: 20px; }
+</style>
+</head><body>
+<div class="phone w844" data-theme="light">
+  <div class="frame">
+      <div class="rail">
+        <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+        <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+        <div class="rail-item on"><span class="rail-ico">&#9998;</span>Orar</div>
+        <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+        <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+      </div>
+
+    <div class="pane index">
+      <div class="surface">
+        <div class="art" style="min-height:104px"></div>
+        <h2>Gloria</h2>
+        <div class="meta">Gloria Patri &middot; Oraciones comunes</div>
+        <span class="grow"></span>
+        <div class="bar">
+          <button class="ico-btn" aria-label="Compartir">&#8599;</button>
+          <button class="ico-btn" aria-label="Escuchar">&#9654;</button>
+          <button class="ico-btn" aria-label="Tama&ntilde;o del texto">Aa</button>
+        </div>
+      </div>
+    </div>
+    <div class="pane read">
+      <div class="pane-body">
+        <div class="reading"><p>Gloria al Padre, y al Hijo, y al Esp&iacute;ritu Santo. Como era en el principio, ahora y siempre, por los siglos de los siglos. Am&eacute;n.</p></div>
+        <div class="sec">Historia</div>
+        <div class="body">El &laquo;Gloria Patri&raquo; es una doxología trinitaria de la Iglesia antigua, una de las primeras oraciones cristianas junto con el Padre Nuestro. Su forma breve (&laquo;Gloria al Padre, y al Hijo, y al Espíritu Santo...&raquo;) se usó en la liturgia romana y en la Liturgia de las Horas desde los primeros siglos; la segunda parte habla del tiempo eterno de Dios. Se reza al final de cada decena del Rosario, al terminar los salmos en la Liturgia de las Horas y como jaculatoria de alabanza. Su sencillez la hace apta para cualquier momento del día.</div>
+        <div class="sec">C&oacute;mo rezarla</div>
+        <div class="body">Se reza de pie o sentado, con las manos juntas. En el Rosario se dice al terminar cada decena, después del Avemaría, y toda la asamblea la recita junta; algunos hacen una pequeña inclinación al nombrar la Trinidad. En la Liturgia de las Horas cierra los salmos y las lecturas. También se puede rezar en cualquier momento como breve alabanza, sin necesidad de más palabras.</div>
+        <div class="sec">Acerca de esta oraci&oacute;n</div>
+        <div class="grp">
+          <div class="note"><div class="meta">FUENTE</div><div class="nt">Liturgia de las Horas; Misal Romano (doxología).</div></div>
+          <div class="hair"></div>
+          <div class="note"><div class="meta">APROBACI&Oacute;N</div><div class="nt">Recitado en la Liturgia de las Horas y al final de cada decena del Rosario.</div></div>
+          <div class="hair"></div>
+          <div class="note"><div class="meta">NOTA DEL TEXTO</div><div class="nt">Texto litúrgico de dominio público.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone w915" data-theme="dark">
+  <div class="frame">
+      <div class="rail">
+        <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+        <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+        <div class="rail-item on"><span class="rail-ico">&#9998;</span>Orar</div>
+        <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+        <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+      </div>
+
+    <div class="pane index">
+      <div class="surface">
+        <div class="art" style="min-height:104px"></div>
+        <h2>Gloria</h2>
+        <div class="meta">Gloria Patri &middot; Oraciones comunes</div>
+        <span class="grow"></span>
+        <div class="bar">
+          <button class="ico-btn" aria-label="Compartir">&#8599;</button>
+          <button class="ico-btn" aria-label="Escuchar">&#9654;</button>
+          <button class="ico-btn" aria-label="Tama&ntilde;o del texto">Aa</button>
+        </div>
+      </div>
+    </div>
+    <div class="pane read">
+      <div class="pane-body">
+        <div class="reading"><p>Gloria al Padre, y al Hijo, y al Esp&iacute;ritu Santo. Como era en el principio, ahora y siempre, por los siglos de los siglos. Am&eacute;n.</p></div>
+        <div class="sec">Historia</div>
+        <div class="body">El &laquo;Gloria Patri&raquo; es una doxología trinitaria de la Iglesia antigua, una de las primeras oraciones cristianas junto con el Padre Nuestro. Su forma breve (&laquo;Gloria al Padre, y al Hijo, y al Espíritu Santo...&raquo;) se usó en la liturgia romana y en la Liturgia de las Horas desde los primeros siglos; la segunda parte habla del tiempo eterno de Dios. Se reza al final de cada decena del Rosario, al terminar los salmos en la Liturgia de las Horas y como jaculatoria de alabanza. Su sencillez la hace apta para cualquier momento del día.</div>
+        <div class="sec">C&oacute;mo rezarla</div>
+        <div class="body">Se reza de pie o sentado, con las manos juntas. En el Rosario se dice al terminar cada decena, después del Avemaría, y toda la asamblea la recita junta; algunos hacen una pequeña inclinación al nombrar la Trinidad. En la Liturgia de las Horas cierra los salmos y las lecturas. También se puede rezar en cualquier momento como breve alabanza, sin necesidad de más palabras.</div>
+        <div class="sec">Acerca de esta oraci&oacute;n</div>
+        <div class="grp">
+          <div class="note"><div class="meta">FUENTE</div><div class="nt">Liturgia de las Horas; Misal Romano (doxología).</div></div>
+          <div class="hair"></div>
+          <div class="note"><div class="meta">APROBACI&Oacute;N</div><div class="nt">Recitado en la Liturgia de las Horas y al final de cada decena del Rosario.</div></div>
+          <div class="hair"></div>
+          <div class="note"><div class="meta">NOTA DEL TEXTO</div><div class="nt">Texto litúrgico de dominio público.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone w740" data-theme="light">
+  <div class="frame">
+      <div class="rail">
+        <div class="rail-item"><span class="rail-ico">&#9673;</span>Hoy</div>
+        <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+        <div class="rail-item on"><span class="rail-ico">&#9998;</span>Orar</div>
+        <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+        <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+      </div>
+
+    <div class="pane index">
+      <div class="surface">
+        <div class="art" style="min-height:78px"></div>
+        <h2>Gloria</h2>
+        <div class="meta">Gloria Patri &middot; Oraciones comunes</div>
+        <span class="grow"></span>
+        <div class="bar">
+          <button class="ico-btn" aria-label="Compartir">&#8599;</button>
+          <button class="ico-btn" aria-label="Escuchar">&#9654;</button>
+          <button class="ico-btn" aria-label="Tama&ntilde;o del texto">Aa</button>
+        </div>
+      </div>
+    </div>
+    <div class="pane read">
+      <div class="pane-body">
+        <div class="reading"><p>Gloria al Padre, y al Hijo, y al Esp&iacute;ritu Santo. Como era en el principio, ahora y siempre, por los siglos de los siglos. Am&eacute;n.</p></div>
+        <div class="sec">Historia</div>
+        <div class="body">El &laquo;Gloria Patri&raquo; es una doxología trinitaria de la Iglesia antigua, una de las primeras oraciones cristianas junto con el Padre Nuestro. Su forma breve (&laquo;Gloria al Padre, y al Hijo, y al Espíritu Santo...&raquo;) se usó en la liturgia romana y en la Liturgia de las Horas desde los primeros siglos; la segunda parte habla del tiempo eterno de Dios. Se reza al final de cada decena del Rosario, al terminar los salmos en la Liturgia de las Horas y como jaculatoria de alabanza. Su sencillez la hace apta para cualquier momento del día.</div>
+        <div class="sec">C&oacute;mo rezarla</div>
+        <div class="body">Se reza de pie o sentado, con las manos juntas. En el Rosario se dice al terminar cada decena, después del Avemaría, y toda la asamblea la recita junta; algunos hacen una pequeña inclinación al nombrar la Trinidad. En la Liturgia de las Horas cierra los salmos y las lecturas. También se puede rezar en cualquier momento como breve alabanza, sin necesidad de más palabras.</div>
+        <div class="sec">Acerca de esta oraci&oacute;n</div>
+        <div class="grp">
+          <div class="note"><div class="meta">FUENTE</div><div class="nt">Liturgia de las Horas; Misal Romano (doxología).</div></div>
+          <div class="hair"></div>
+          <div class="note"><div class="meta">APROBACI&Oacute;N</div><div class="nt">Recitado en la Liturgia de las Horas y al final de cada decena del Rosario.</div></div>
+          <div class="hair"></div>
+          <div class="note"><div class="meta">NOTA DEL TEXTO</div><div class="nt">Texto litúrgico de dominio público.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>
