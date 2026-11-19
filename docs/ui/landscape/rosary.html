@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
-<title>Rosario &middot; landscape v5</title>
+<title>Rosario &middot; landscape v6 · APROBADO</title>
 <link rel="stylesheet" href="lumen.css">
 <style>
 /* ===== v4 ===== */
@@ -58,6 +58,13 @@
 .pane.index .pane-body { display: flex; flex-direction: column; padding: 12px 16px 16px; }
 .pane.read .pane-body { padding: 12px 16px 16px; }
 .decades { display: flex; flex-direction: column; justify-content: space-between; flex: 1; min-height: 0; }
+/* v6: la columna derecha tambien ancla su ultimo bloque abajo, con el mismo
+   padding inferior de 16dp que la central (era 19/41/11 segun tamano). */
+.pane.read .pane-body { display: flex; flex-direction: column; padding: 12px 16px 16px; }
+.pane.read .next-row { margin-top: auto; }
+.pane.read .next-card { margin-bottom: 12px; }
+/* v6: anillo del icono inactivo por encima de 1.27:1 */
+.ico-btn { border-color: var(--text-3); }
 .hdr { height: 56px; padding: 8px 16px; }
 .next-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; width: 100%;
             min-height: 52px; padding: 8px 14px; border-radius: var(--r-group);
@@ -79,7 +86,8 @@
 .state-box { width: 460px; }
 .state-cap { color: #E8EAF2; font-size: 12px; font-weight: 600; margin: 0 0 6px 2px;
              letter-spacing: .04em; text-transform: uppercase; }
-.state-phone { width: 460px; height: 224px; }
+.state-phone { width: 460px; height: 216px; }
+.state-phone .pane-body { padding-bottom: 16px; }
 /* N6: el skeleton espeja la estructura real (rail + indice + lectura) */
 .skel { height: 12px; border-radius: 6px; background: var(--selection); margin-bottom: 10px; }
 .skel.w60 { width: 60%; } .skel.w85 { width: 85%; } .skel.w40 { width: 40%; }
@@ -306,7 +314,7 @@
       <div class="frame"><div class="pane read" style="flex:1">
         
         <div class="hdr"><h1>Salve</h1><span class="sub">&middot; 1/1</span><span class="sp"></span>
-          <button class="ico-btn on">Aa</button></div>
+          <button class="ico-btn">Aa</button><button class="ico-btn">&#9654;</button></div>
         <div class="pane-body">
           <div class="reading clamp" style="font-size:18px;max-width:420px">
             <p>Dios te salve, Reina y Madre de misericordia, vida, dulzura y esperanza nuestra; Dios te salve. A ti clamamos los desterrados hijos de Eva; a ti suspiramos, gimiendo y llorando en este valle de l&aacute;grimas.</p>
