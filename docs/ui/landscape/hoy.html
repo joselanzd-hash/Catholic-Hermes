@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Hoy &middot; landscape v1</title>
+<link rel="stylesheet" href="lumen.css">
+<style>
+.phone { background: var(--canvas); }
+.content { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+.hdr { height: 52px; flex: 0 0 52px; padding: 6px 16px; display: flex; align-items: center; gap: 6px; }
+.hdr-id { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.hdr h1 { font-size: 21px; font-weight: 600; margin: 0; color: var(--text-1); }
+.hdr .sub { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ico-btn { width: 44px; height: 44px; min-width: 44px; border: 1px solid var(--text-3);
+           background: var(--selection); display: inline-flex; align-items: center;
+           justify-content: center; border-radius: 999px; color: var(--text-2);
+           font-size: 15px; cursor: pointer; }
+.ico-btn.on { background: var(--accent-muted); color: var(--accent); border-color: transparent; }
+.panes { display: flex; flex: 1; min-height: 0; }
+.pane.index { flex: 0 0 38%; min-width: 280px; max-width: 360px; border-right: 1px solid var(--separator);
+              display: flex; flex-direction: column; padding: 6px 16px 16px; gap: 4px; }
+.pane.read { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.pane.read .pane-body { flex: 1; min-height: 0; overflow: hidden; padding: 4px 16px 8px;
+                        display: flex; flex-direction: column; gap: 12px; }
+.season { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 12px;
+          border-radius: var(--r-group); background: var(--grouped); border: 1px solid var(--hairline); }
+.season .dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: var(--accent); }
+.season .s-t { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.season .chev { margin-left: auto; }
+.h3 { font-size: 16px; font-weight: 600; color: var(--text-1); padding: 8px 4px 6px; }
+.meta { font-size: 12px; color: var(--text-2); line-height: 1.35; }
+.grp { border-radius: var(--r-group); background: var(--grouped); border: 1px solid var(--hairline); overflow: hidden; }
+.hair { height: 1px; background: var(--hairline); margin: 0 12px; }
+.prow { min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+.prow .tag { font-size: 11px; font-weight: 700; letter-spacing: .05em; color: var(--accent);
+             background: var(--accent-muted); border-radius: 999px; padding: 4px 8px; flex: 0 0 auto; }
+.prow .pn { flex: 1; min-width: 0; font-size: 14px; color: var(--text-1);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chev { color: var(--text-3); font-size: 16px; }
+.grow { flex: 1; }
+.fid { padding-top: 8px; }
+.dots { display: flex; gap: 6px; margin-top: 6px; }
+.d { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--accent); }
+.d.on { background: var(--accent); }
+.d.now { background: var(--gold); border-color: var(--gold); }
+.card { border-radius: var(--r-card); background: var(--raised); border: 1px solid var(--hairline); padding: 16px; }
+.card.grp2 { background: var(--grouped); border-radius: var(--r-group); padding: 12px 16px; }
+.ch { display: flex; align-items: baseline; gap: 10px; }
+.ct { font-size: 16px; font-weight: 600; color: var(--text-1); }
+.cr { font-size: 12px; color: var(--text-2); margin-left: auto; }
+.reading { max-width: 640px; font-size: 16px; line-height: 1.55; color: var(--text-1); margin-top: 8px;
+           display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card .hair { margin: 10px 0 0; }
+.card .prow { padding: 8px 0 0; min-height: 44px; }
+.transport { flex: 0 0 auto; display: flex; gap: 8px; align-items: center; padding: 8px 16px 16px; }
+.btn { min-height: 46px; display: inline-flex; align-items: center; justify-content: center;
+       padding: 0 20px; border-radius: 999px; border: 0; background: var(--accent);
+       color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; }
+[data-theme="dark"] .btn { color: #0A0E1C; }
+.phone.w740 .hdr { height: 44px; flex: 0 0 44px; }
+.phone.w740 .hdr h1 { font-size: 19px; }
+.phone.w740 .reading { font-size: 15px; }
+.phone.w740 .pane.index { padding-bottom: 12px; }
+</style>
+</head><body>
+<div class="phone w844" data-theme="light">
+  <div class="frame">
+      <div class="rail">
+        <div class="rail-item on"><span class="rail-ico">&#9673;</span>Hoy</div>
+        <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+        <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+        <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+        <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+      </div>
+
+    <div class="content">
+      <div class="hdr">
+        <div class="hdr-id"><h1>Hoy</h1><span class="sub">mi&eacute;rcoles, 18 de noviembre</span></div>
+        <span class="sp"></span>
+        <button class="ico-btn" aria-label="Buscar">&#9906;</button>
+        <button class="ico-btn" aria-label="Recordatorios">&#9711;</button>
+      </div>
+      <div class="panes">
+        <div class="pane index">
+          <div class="season">
+            <span class="dot"></span>
+            <div><div class="s-t">Tiempo Ordinario</div><div class="meta">Semana XXXIII &middot; verde</div></div>
+            <span class="chev">&rsaquo;</span>
+          </div>
+          <div class="h3">Oraci&oacute;n del momento</div>
+          <div class="grp">
+            <div class="prow"><span class="tag">AHORA</span><span class="pn">&Aacute;ngelus del mediod&iacute;a</span><span class="chev">&rsaquo;</span></div>
+            <div class="hair"></div>
+            <div class="prow"><span class="tag">DESPU&Eacute;S</span><span class="pn">V&iacute;speras</span><span class="chev">&rsaquo;</span></div>
+          </div>
+          <span class="grow"></span>
+          <div class="fid">
+            <div class="meta">FIDELIDAD &middot; 7 D&Iacute;AS</div>
+            <div class="dots"><i class="d on"></i><i class="d on"></i><i class="d on"></i><i class="d off"></i><i class="d on"></i><i class="d on"></i><i class="d now"></i></div>
+          </div>
+        </div>
+        <div class="pane read">
+          <div class="pane-body">
+            <div class="card mass">
+              <div class="ch"><span class="ct">Liturgia de hoy</span><span class="cr">Lc 19, 11&ndash;28</span></div>
+              <div class="meta">Vatican News</div>
+              <div class="reading">En aquel tiempo, dijo Jes&uacute;s a sus disc&iacute;pulos una par&aacute;bola, porque estaba cerca de Jerusal&eacute;n y ellos se cre&iacute;an que el Reino de Dios iba a manifestarse enseguida.</div>
+              <div class="hair"></div>
+              <div class="prow"><span class="pn">1.&ordf; lectura &middot; 2 Mac 7, 1. 20&ndash;31</span><span class="chev">&rsaquo;</span></div>
+            </div>
+            <div class="card grp2">
+              <div class="meta">PARA TI HOY</div>
+              <div class="prow"><span class="pn">Retomar el plan de lectura &middot; d&iacute;a 12</span><span class="chev">&rsaquo;</span></div>
+            </div>
+            <div class="grp">
+              <div class="prow"><span class="pn">M&aacute;s para hoy</span><span class="meta">Santo, otras lecturas y oraciones</span><span class="chev">&rsaquo;</span></div>
+            </div>
+          </div>
+          <div class="transport">
+            <button class="btn" style="flex:1">Ver la liturgia de hoy</button>
+            <button class="ico-btn on" aria-label="Escuchar el Evangelio">&#9654;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone w915" data-theme="dark">
+  <div class="frame">
+      <div class="rail">
+        <div class="rail-item on"><span class="rail-ico">&#9673;</span>Hoy</div>
+        <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+        <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+        <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+        <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+      </div>
+
+    <div class="content">
+      <div class="hdr">
+        <div class="hdr-id"><h1>Hoy</h1><span class="sub">mi&eacute;rcoles, 18 de noviembre</span></div>
+        <span class="sp"></span>
+        <button class="ico-btn" aria-label="Buscar">&#9906;</button>
+        <button class="ico-btn" aria-label="Recordatorios">&#9711;</button>
+      </div>
+      <div class="panes">
+        <div class="pane index">
+          <div class="season">
+            <span class="dot"></span>
+            <div><div class="s-t">Tiempo Ordinario</div><div class="meta">Semana XXXIII &middot; verde</div></div>
+            <span class="chev">&rsaquo;</span>
+          </div>
+          <div class="h3">Oraci&oacute;n del momento</div>
+          <div class="grp">
+            <div class="prow"><span class="tag">AHORA</span><span class="pn">&Aacute;ngelus del mediod&iacute;a</span><span class="chev">&rsaquo;</span></div>
+            <div class="hair"></div>
+            <div class="prow"><span class="tag">DESPU&Eacute;S</span><span class="pn">V&iacute;speras</span><span class="chev">&rsaquo;</span></div>
+          </div>
+          <span class="grow"></span>
+          <div class="fid">
+            <div class="meta">FIDELIDAD &middot; 7 D&Iacute;AS</div>
+            <div class="dots"><i class="d on"></i><i class="d on"></i><i class="d on"></i><i class="d off"></i><i class="d on"></i><i class="d on"></i><i class="d now"></i></div>
+          </div>
+        </div>
+        <div class="pane read">
+          <div class="pane-body">
+            <div class="card mass">
+              <div class="ch"><span class="ct">Liturgia de hoy</span><span class="cr">Lc 19, 11&ndash;28</span></div>
+              <div class="meta">Vatican News</div>
+              <div class="reading">En aquel tiempo, dijo Jes&uacute;s a sus disc&iacute;pulos una par&aacute;bola, porque estaba cerca de Jerusal&eacute;n y ellos se cre&iacute;an que el Reino de Dios iba a manifestarse enseguida.</div>
+              <div class="hair"></div>
+              <div class="prow"><span class="pn">1.&ordf; lectura &middot; 2 Mac 7, 1. 20&ndash;31</span><span class="chev">&rsaquo;</span></div>
+            </div>
+            <div class="card grp2">
+              <div class="meta">PARA TI HOY</div>
+              <div class="prow"><span class="pn">Retomar el plan de lectura &middot; d&iacute;a 12</span><span class="chev">&rsaquo;</span></div>
+            </div>
+            <div class="grp">
+              <div class="prow"><span class="pn">M&aacute;s para hoy</span><span class="meta">Santo, otras lecturas y oraciones</span><span class="chev">&rsaquo;</span></div>
+            </div>
+          </div>
+          <div class="transport">
+            <button class="btn" style="flex:1">Ver la liturgia de hoy</button>
+            <button class="ico-btn on" aria-label="Escuchar el Evangelio">&#9654;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone w740" data-theme="light">
+  <div class="frame">
+      <div class="rail">
+        <div class="rail-item on"><span class="rail-ico">&#9673;</span>Hoy</div>
+        <div class="rail-item"><span class="rail-ico">&#10047;</span>Rosario</div>
+        <div class="rail-item"><span class="rail-ico">&#9998;</span>Orar</div>
+        <div class="rail-item"><span class="rail-ico">&#9636;</span>Leer</div>
+        <div class="rail-item"><span class="rail-ico">&#10010;</span>M&aacute;s</div>
+      </div>
+
+    <div class="content">
+      <div class="hdr">
+        <div class="hdr-id"><h1>Hoy</h1><span class="sub">mi&eacute;rcoles, 18 de noviembre</span></div>
+        <span class="sp"></span>
+        <button class="ico-btn" aria-label="Buscar">&#9906;</button>
+        <button class="ico-btn" aria-label="Recordatorios">&#9711;</button>
+      </div>
+      <div class="panes">
+        <div class="pane index">
+          <div class="season">
+            <span class="dot"></span>
+            <div><div class="s-t">Tiempo Ordinario</div><div class="meta">Semana XXXIII &middot; verde</div></div>
+            <span class="chev">&rsaquo;</span>
+          </div>
+          <div class="h3">Oraci&oacute;n del momento</div>
+          <div class="grp">
+            <div class="prow"><span class="tag">AHORA</span><span class="pn">&Aacute;ngelus del mediod&iacute;a</span><span class="chev">&rsaquo;</span></div>
+            <div class="hair"></div>
+            <div class="prow"><span class="tag">DESPU&Eacute;S</span><span class="pn">V&iacute;speras</span><span class="chev">&rsaquo;</span></div>
+          </div>
+          <span class="grow"></span>
+        </div>
+        <div class="pane read">
+          <div class="pane-body">
+            <div class="card mass">
+              <div class="ch"><span class="ct">Liturgia de hoy</span><span class="cr">Lc 19, 11&ndash;28</span></div>
+              <div class="meta">Vatican News</div>
+              <div class="reading">En aquel tiempo, dijo Jes&uacute;s a sus disc&iacute;pulos una par&aacute;bola, porque estaba cerca de Jerusal&eacute;n y ellos se cre&iacute;an que el Reino de Dios iba a manifestarse enseguida.</div>
+              <div class="hair"></div>
+              <div class="prow"><span class="pn">1.&ordf; lectura &middot; 2 Mac 7, 1. 20&ndash;31</span><span class="chev">&rsaquo;</span></div>
+            </div>
+            <div class="card grp2">
+              <div class="meta">PARA TI HOY</div>
+              <div class="prow"><span class="pn">Retomar el plan de lectura &middot; d&iacute;a 12</span><span class="chev">&rsaquo;</span></div>
+            </div>
+            <div class="grp">
+              <div class="prow"><span class="pn">M&aacute;s para hoy</span><span class="meta">Santo, otras lecturas y oraciones</span><span class="chev">&rsaquo;</span></div>
+            </div>
+          </div>
+          <div class="transport">
+            <button class="btn" style="flex:1">Ver la liturgia de hoy</button>
+            <button class="ico-btn on" aria-label="Escuchar el Evangelio">&#9654;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>
