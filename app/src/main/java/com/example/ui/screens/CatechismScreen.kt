@@ -10,6 +10,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,9 +29,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -65,6 +70,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -109,6 +115,7 @@ import com.example.data.repository.CatechismStructureCatalog
 import com.example.data.repository.CatholicDataRepository
 import com.example.data.repository.CatechismCompendiumData
 import com.example.data.repository.CompendiumQA
+import com.example.data.repository.DoctrineFormula
 import com.example.ui.components.InAppBrowserDialog
 import com.example.ui.design.AppActionBar
 import com.example.ui.design.AppActionBarItem
@@ -120,8 +127,10 @@ import com.example.ui.design.AppEmptyState
 import com.example.ui.design.AppFilterChips
 import com.example.ui.design.AppFilterMenu
 import com.example.ui.design.AppGlassSurface
+import com.example.ui.design.AppHeroImage
 import com.example.ui.design.AppHideTabBar
 import com.example.ui.design.AppInlineTitle
+import com.example.ui.design.AppKitChip
 import com.example.ui.design.AppListGroup
 import com.example.ui.design.AppProgressBar
 import com.example.ui.design.AppReadingSettingsSheet
@@ -129,12 +138,16 @@ import com.example.ui.design.AppSecondaryCapsule
 import com.example.ui.design.AppSeasonDot
 import com.example.ui.design.AppSheet
 import com.example.ui.design.GroupPosition
+import com.example.ui.design.LandscapeTwoPane
 import com.example.ui.design.LocalPreferencesStore
+import com.example.ui.design.PaneSurface
 import com.example.ui.design.ReadingSheetLabels
 import com.example.ui.design.appDockInset
 import com.example.ui.design.groupedItem
 import com.example.ui.design.lumenGlass
 import com.example.ui.design.lumenPress
+import com.example.ui.design.rememberFirstAsset
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
 import kotlinx.coroutines.Dispatchers
@@ -886,7 +899,9 @@ private fun CatSearchField(
     placeholder: String,
     clearLabel: String,
     fieldTag: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Horizontal inset; the landscape panes pass 0 because the pane already pads. */
+    gutter: Dp? = null
 ) {
     val design = LocalAppDesign.current
     val p = design.palette
@@ -896,7 +911,7 @@ private fun CatSearchField(
     Row(
         modifier
             .fillMaxWidth()
-            .padding(horizontal = design.spacing.gutter)
+            .padding(horizontal = gutter ?: design.spacing.gutter)
             .heightIn(min = 48.dp)
             .lumenGlass(shape, lifted = false)
             .semantics { contentDescription = placeholder }
@@ -1005,13 +1020,328 @@ private fun CccIndexPage(
         }
     }
 
+    val form = rememberLandscapeForm()
+    val landscape = form.isLandscape && form.heightDp < 500.dp
+
     // Typing the first letter brings the field to the top of the page, under
-    // the bar, so the results have the room.
+    // the bar, so the results have the room. In landscape the field is fixed
+    // in the left pane, so the results list stays at its top.
     val searching = query.isNotBlank()
-    LaunchedEffect(searching) {
-        if (searching && listState.firstVisibleItemIndex < 1) {
+    LaunchedEffect(searching, landscape) {
+        if (searching && !landscape && listState.firstVisibleItemIndex < 1) {
             listState.animateScrollToItem(1, -with(density) { (topInset + 8.dp).roundToPx() })
         }
+    }
+
+    // Shared blocks: the search field, the continue card, the search results
+    // and the contents items are the same composables in both orientations.
+    val offlineNote = lang.pick(
+        "Texto íntegro de los 2865 párrafos, disponible sin conexión.",
+        "The complete text of all 2865 paragraphs, available offline.",
+        "Texto integral dos 2865 parágrafos, disponível offline."
+    )
+    val searchField: @Composable (Dp?) -> Unit = { gutter ->
+        CatSearchField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = lang.pick(
+                "Buscar un tema o un número",
+                "Search a topic or number",
+                "Pesquisar tema ou número"
+            ),
+            clearLabel = lang.pick("Limpiar", "Clear", "Limpar"),
+            fieldTag = "ccc_search_input",
+            gutter = gutter
+        )
+    }
+    val last = lastRead?.let { n -> repository.catechismSectionFor(n)?.let { n to it } }
+    val continueCard: (@Composable () -> Unit)? = if (last != null) {
+        { ContinueCard(lang, last.first, last.second) { onOpenReader(last.second, last.first) } }
+    } else null
+    val searchItems: LazyListScope.() -> Unit = {
+        when (val s = search) {
+            CccSearch.Idle -> Unit
+            CccSearch.Busy -> item(key = "ccc_searching") {
+                Column(
+                    Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter, vertical = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        lang.pick("Buscando…", "Searching…", "A pesquisar…"),
+                        style = styles.subhead,
+                        color = p.textSecondary
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    AppProgressBar(0.35f, Modifier.widthIn(max = 120.dp), height = 3.dp)
+                }
+            }
+
+            is CccSearch.Number -> item(key = "ccc_search_number") {
+                Column(Modifier.padding(top = 20.dp)) {
+                    NumberHitCard(repository, lang, s.n) { section ->
+                        focus.clearFocus()
+                        onOpenReader(section, s.n)
+                    }
+                }
+            }
+
+            CccSearch.OutOfRange -> item(key = "ccc_search_range") {
+                EmptyHint(
+                    title = lang.pick(
+                        "Los párrafos van del 1 al 2865.",
+                        "Paragraphs run from 1 to 2865.",
+                        "Os parágrafos vão de 1 a 2865."
+                    ),
+                    body = null
+                )
+            }
+
+            is CccSearch.Results -> {
+                if (s.total == 0) {
+                    item(key = "ccc_search_empty") {
+                        AppEmptyState(
+                            title = lang.pick(
+                                "Sin resultados para «${query.trim()}»",
+                                "No results for “${query.trim()}”",
+                                "Sem resultados para «${query.trim()}»"
+                            ),
+                            body = lang.pick(
+                                "Prueba con otra palabra o con un número del 1 al 2865.",
+                                "Try another word, or a number from 1 to 2865.",
+                                "Tente outra palavra ou um número de 1 a 2865."
+                            ),
+                            icon = Icons.Outlined.Search,
+                            modifier = Modifier.testTag("ccc_search_empty")
+                        )
+                    }
+                } else {
+                    item(key = "ccc_search_results_header") {
+                        val shown = s.numbers.size
+                        val label = if (s.total > shown) {
+                            lang.pick(
+                                "${s.total} resultados · se muestran $shown",
+                                "${s.total} results · showing $shown",
+                                "${s.total} resultados · mostrando $shown"
+                            )
+                        } else {
+                            lang.pick(
+                                "${s.total} ${if (s.total == 1) "resultado" else "resultados"}",
+                                "${s.total} ${if (s.total == 1) "result" else "results"}",
+                                "${s.total} ${if (s.total == 1) "resultado" else "resultados"}"
+                            )
+                        }
+                        Text(
+                            label,
+                            style = styles.footnote,
+                            color = p.textSecondary,
+                            modifier = Modifier
+                                .padding(horizontal = design.spacing.gutter)
+                                .padding(top = 20.dp, bottom = 10.dp)
+                                .testTag("catechism_search_count")
+                        )
+                    }
+                    item(key = "ccc_search_paragraph_numbers") {
+                        val tokens = remember(query) { queryTokens(query) }
+                        AppListGroup(Modifier.testTag("catechism_search_paragraph_numbers")) {
+                            s.numbers.forEachIndexed { i, n ->
+                                SearchResultRow(
+                                    repository = repository,
+                                    lang = lang,
+                                    number = n,
+                                    tokens = tokens,
+                                    divider = i < s.numbers.lastIndex,
+                                    onClick = {
+                                        focus.clearFocus()
+                                        repository.catechismSectionFor(n)?.let { onOpenReader(it, n) }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    val contentsItems: LazyListScope.() -> Unit = {
+        // ---- contents
+        item(key = "contents_header") {
+            Spacer(Modifier.height(28.dp))
+            CatSectionHeader(lang.pick("Contenido", "Contents", "Conteúdo"))
+        }
+        item(key = "contents_group") {
+            val lastPart = lastRead?.let { n -> structure.nodes.indexOfFirst { n in it.range } }
+            // Level 0 of the hierarchy: the Prologue and the four Parts. Each Part opens its own page, where
+            // sections, chapters and articles unfold.
+            AppListGroup(Modifier.testTag("ccc_index")) {
+                structure.nodes.forEachIndexed { part, node ->
+                    val label = CatechismLabels.label(node, lang)
+                    val range = CatechismLabels.rangeLabel(node.range, lang)
+                    Box(Modifier.testTag("ccc_node_${node.id}")) {
+                        CatRow(
+                            title = node.title.get(lang),
+                            subtitle = if (label != null) "$label · $range" else range,
+                            minHeight = 64.dp,
+                            divider = part < structure.nodes.lastIndex,
+                            trailing = if (lastPart == part) ({
+                                AppSeasonDot(p.accent, size = 8.dp)
+                            }) else null,
+                            onClick = {
+                                if (part == 0) onOpenReader(outline.first(), null) else onOpenPart(part)
+                            },
+                            modifier = Modifier.testTag("catechism_part_$part")
+                        )
+                    }
+                }
+            }
+        }
+
+        // ---- compendium and formulas
+        item(key = "study_header") {
+            Spacer(Modifier.height(28.dp))
+            CatSectionHeader(
+                lang.pick("Compendio y fórmulas", "Compendium and formulas", "Compêndio e fórmulas")
+            )
+        }
+        item(key = "study_group") {
+            AppListGroup {
+                CatRow(
+                    title = CatechismCompendiumData.editorialTitle.get(lang),
+                    subtitle = lang.pick("Resúmenes editoriales", "Editorial summaries", "Resumos editoriais"),
+                    leadingIcon = Icons.Outlined.QuestionAnswer,
+                    minHeight = 64.dp,
+                    onClick = onOpenCompendium,
+                    modifier = Modifier.testTag("catechism_open_compendium")
+                )
+                CatRow(
+                    title = lang.pick(
+                        "Fórmulas de la doctrina católica",
+                        "Formulas of Catholic doctrine",
+                        "Fórmulas da doutrina católica"
+                    ),
+                    subtitle = lang.pick(
+                        "Mandamientos, preceptos, dones, virtudes, obras de misericordia",
+                        "Commandments, precepts, gifts, virtues, works of mercy",
+                        "Mandamentos, preceitos, dons, virtudes, obras de misericórdia"
+                    ),
+                    leadingIcon = Icons.Outlined.Checklist,
+                    minHeight = 64.dp,
+                    divider = false,
+                    onClick = onOpenFormulas,
+                    modifier = Modifier.testTag("catechism_open_formulas")
+                )
+            }
+        }
+
+        // ---- official text
+        item(key = "official_header") {
+            Spacer(Modifier.height(28.dp))
+            CatSectionHeader(lang.pick("Texto oficial", "Official text", "Texto oficial"))
+        }
+        item(key = "official_group") {
+            OfficialTexts(repository, lang, onOpenUrl)
+        }
+
+        item(key = "offline_note") {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter).padding(top = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    offlineNote,
+                    style = styles.footnote,
+                    color = p.textSecondary,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    lang.pick(
+                        "Ilustración: «La disputa del Santísimo Sacramento», Rafael (1509–1510).",
+                        "Illustration: “Disputation of the Holy Sacrament,” Raphael (1509–1510).",
+                        "Ilustração: «A Disputa do Santíssimo Sacramento», Rafael (1509–1510)."
+                    ),
+                    style = styles.caption,
+                    color = p.textSecondary,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+
+    // Landscape phone: the 300dp cover art would eat the whole screen. The
+    // book's identity (small art, title, search) becomes a fixed left pane;
+    // the contents — or the search results — scroll in the right pane.
+    if (landscape) {
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = topInset, bottom = insets.calculateBottomPadding()),
+            leftWidthFraction = 0.36f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(if (form.heightDp < 380.dp) 78.dp else 96.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .testTag("catechism_hero_photo")
+                        ) {
+                            AppHeroImage(
+                                rememberFirstAsset("heroes/lumen/catechism.jpg"),
+                                Modifier.fillMaxSize(),
+                                fadeToCanvas = false,
+                                topVeil = false
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            lang.pick("Catecismo", "Catechism", "Catecismo"),
+                            style = styles.title2,
+                            color = p.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            lang.pick("de la Iglesia Católica", "of the Catholic Church", "da Igreja Católica"),
+                            style = styles.footnote,
+                            color = p.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        searchField(0.dp)
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            offlineNote,
+                            style = styles.caption,
+                            color = p.textSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                ) {
+                    if (searching) {
+                        searchItems()
+                    } else {
+                        if (continueCard != null) {
+                            item(key = "catechism_continue") {
+                                Column(Modifier.padding(top = 8.dp)) { continueCard() }
+                            }
+                        }
+                        contentsItems()
+                    }
+                }
+            }
+        )
+        return
     }
 
     val bottomPad = insets.calculateBottomPadding() + 24.dp
@@ -1032,240 +1362,20 @@ private fun CccIndexPage(
         item(key = "ccc_search_row") {
             Column {
                 Spacer(Modifier.height(20.dp))
-                CatSearchField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    placeholder = lang.pick(
-                        "Buscar un tema o un número",
-                        "Search a topic or number",
-                        "Pesquisar tema ou número"
-                    ),
-                    clearLabel = lang.pick("Limpiar", "Clear", "Limpar"),
-                    fieldTag = "ccc_search_input"
-                )
+                searchField(null)
             }
         }
 
         if (searching) {
-            when (val s = search) {
-                CccSearch.Idle -> Unit
-                CccSearch.Busy -> item(key = "ccc_searching") {
-                    Column(
-                        Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter, vertical = 28.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            lang.pick("Buscando…", "Searching…", "A pesquisar…"),
-                            style = styles.subhead,
-                            color = p.textSecondary
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        AppProgressBar(0.35f, Modifier.widthIn(max = 120.dp), height = 3.dp)
-                    }
-                }
-
-                is CccSearch.Number -> item(key = "ccc_search_number") {
-                    Column(Modifier.padding(top = 20.dp)) {
-                        NumberHitCard(repository, lang, s.n) { section ->
-                            focus.clearFocus()
-                            onOpenReader(section, s.n)
-                        }
-                    }
-                }
-
-                CccSearch.OutOfRange -> item(key = "ccc_search_range") {
-                    EmptyHint(
-                        title = lang.pick(
-                            "Los párrafos van del 1 al 2865.",
-                            "Paragraphs run from 1 to 2865.",
-                            "Os parágrafos vão de 1 a 2865."
-                        ),
-                        body = null
-                    )
-                }
-
-                is CccSearch.Results -> {
-                    if (s.total == 0) {
-                        item(key = "ccc_search_empty") {
-                            AppEmptyState(
-                                title = lang.pick(
-                                    "Sin resultados para «${query.trim()}»",
-                                    "No results for “${query.trim()}”",
-                                    "Sem resultados para «${query.trim()}»"
-                                ),
-                                body = lang.pick(
-                                    "Prueba con otra palabra o con un número del 1 al 2865.",
-                                    "Try another word, or a number from 1 to 2865.",
-                                    "Tente outra palavra ou um número de 1 a 2865."
-                                ),
-                                icon = Icons.Outlined.Search,
-                                modifier = Modifier.testTag("ccc_search_empty")
-                            )
-                        }
-                    } else {
-                        item(key = "ccc_search_results_header") {
-                            val shown = s.numbers.size
-                            val label = if (s.total > shown) {
-                                lang.pick(
-                                    "${s.total} resultados · se muestran $shown",
-                                    "${s.total} results · showing $shown",
-                                    "${s.total} resultados · mostrando $shown"
-                                )
-                            } else {
-                                lang.pick(
-                                    "${s.total} ${if (s.total == 1) "resultado" else "resultados"}",
-                                    "${s.total} ${if (s.total == 1) "result" else "results"}",
-                                    "${s.total} ${if (s.total == 1) "resultado" else "resultados"}"
-                                )
-                            }
-                            Text(
-                                label,
-                                style = styles.footnote,
-                                color = p.textSecondary,
-                                modifier = Modifier
-                                    .padding(horizontal = design.spacing.gutter)
-                                    .padding(top = 20.dp, bottom = 10.dp)
-                                    .testTag("catechism_search_count")
-                            )
-                        }
-                        item(key = "ccc_search_paragraph_numbers") {
-                            val tokens = remember(query) { queryTokens(query) }
-                            AppListGroup(Modifier.testTag("catechism_search_paragraph_numbers")) {
-                                s.numbers.forEachIndexed { i, n ->
-                                    SearchResultRow(
-                                        repository = repository,
-                                        lang = lang,
-                                        number = n,
-                                        tokens = tokens,
-                                        divider = i < s.numbers.lastIndex,
-                                        onClick = {
-                                            focus.clearFocus()
-                                            repository.catechismSectionFor(n)?.let { onOpenReader(it, n) }
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            searchItems()
         } else {
             // ---- continue reading
-            val last = lastRead?.let { n -> repository.catechismSectionFor(n)?.let { n to it } }
-            if (last != null) {
+            if (continueCard != null) {
                 item(key = "catechism_continue") {
-                    Column(Modifier.padding(top = 28.dp)) {
-                        ContinueCard(lang, last.first, last.second) { onOpenReader(last.second, last.first) }
-                    }
+                    Column(Modifier.padding(top = 28.dp)) { continueCard() }
                 }
             }
-
-            // ---- contents
-            item(key = "contents_header") {
-                Spacer(Modifier.height(28.dp))
-                CatSectionHeader(lang.pick("Contenido", "Contents", "Conteúdo"))
-            }
-            item(key = "contents_group") {
-                val lastPart = lastRead?.let { n -> structure.nodes.indexOfFirst { n in it.range } }
-                // Level 0 of the hierarchy: the Prologue and the four Parts. Each Part opens its own page, where
-                // sections, chapters and articles unfold.
-                AppListGroup(Modifier.testTag("ccc_index")) {
-                    structure.nodes.forEachIndexed { part, node ->
-                        val label = CatechismLabels.label(node, lang)
-                        val range = CatechismLabels.rangeLabel(node.range, lang)
-                        Box(Modifier.testTag("ccc_node_${node.id}")) {
-                            CatRow(
-                                title = node.title.get(lang),
-                                subtitle = if (label != null) "$label · $range" else range,
-                                minHeight = 64.dp,
-                                divider = part < structure.nodes.lastIndex,
-                                trailing = if (lastPart == part) ({
-                                    AppSeasonDot(p.accent, size = 8.dp)
-                                }) else null,
-                                onClick = {
-                                    if (part == 0) onOpenReader(outline.first(), null) else onOpenPart(part)
-                                },
-                                modifier = Modifier.testTag("catechism_part_$part")
-                            )
-                        }
-                    }
-                }
-            }
-
-            // ---- compendium and formulas
-            item(key = "study_header") {
-                Spacer(Modifier.height(28.dp))
-                CatSectionHeader(
-                    lang.pick("Compendio y fórmulas", "Compendium and formulas", "Compêndio e fórmulas")
-                )
-            }
-            item(key = "study_group") {
-                AppListGroup {
-                    CatRow(
-                        title = CatechismCompendiumData.editorialTitle.get(lang),
-                        subtitle = lang.pick("Resúmenes editoriales", "Editorial summaries", "Resumos editoriais"),
-                        leadingIcon = Icons.Outlined.QuestionAnswer,
-                        minHeight = 64.dp,
-                        onClick = onOpenCompendium,
-                        modifier = Modifier.testTag("catechism_open_compendium")
-                    )
-                    CatRow(
-                        title = lang.pick(
-                            "Fórmulas de la doctrina católica",
-                            "Formulas of Catholic doctrine",
-                            "Fórmulas da doutrina católica"
-                        ),
-                        subtitle = lang.pick(
-                            "Mandamientos, preceptos, dones, virtudes, obras de misericordia",
-                            "Commandments, precepts, gifts, virtues, works of mercy",
-                            "Mandamentos, preceitos, dons, virtudes, obras de misericórdia"
-                        ),
-                        leadingIcon = Icons.Outlined.Checklist,
-                        minHeight = 64.dp,
-                        divider = false,
-                        onClick = onOpenFormulas,
-                        modifier = Modifier.testTag("catechism_open_formulas")
-                    )
-                }
-            }
-
-            // ---- official text
-            item(key = "official_header") {
-                Spacer(Modifier.height(28.dp))
-                CatSectionHeader(lang.pick("Texto oficial", "Official text", "Texto oficial"))
-            }
-            item(key = "official_group") {
-                OfficialTexts(repository, lang, onOpenUrl)
-            }
-
-            item(key = "offline_note") {
-                Column(
-                    Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter).padding(top = 28.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        lang.pick(
-                            "Texto íntegro de los 2865 párrafos, disponible sin conexión.",
-                            "The complete text of all 2865 paragraphs, available offline.",
-                            "Texto integral dos 2865 parágrafos, disponível offline."
-                        ),
-                        style = styles.footnote,
-                        color = p.textSecondary,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        lang.pick(
-                            "Ilustración: «La disputa del Santísimo Sacramento», Rafael (1509–1510).",
-                            "Illustration: “Disputation of the Holy Sacrament,” Raphael (1509–1510).",
-                            "Ilustração: «A Disputa do Santíssimo Sacramento», Rafael (1509–1510)."
-                        ),
-                        style = styles.caption,
-                        color = p.textSecondary,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
+            contentsItems()
         }
     }
 }
@@ -1557,57 +1667,34 @@ private fun CccPartPage(
             ?.sections?.flatMap { it.chapters }?.flatMap { it.articles }.orEmpty()
     }
     val rows = remember(root, expanded) { cccTreeRows(root, expanded) }
+    val form = rememberLandscapeForm()
+    val landscape = form.isLandscape && form.heightDp < 500.dp
+    val eyebrowLabel = listOfNotNull(CatechismLabels.label(root, lang), CatechismLabels.rangeLabel(root.range, lang))
+        .joinToString(" · ")
 
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        state = listState,
-        contentPadding = PaddingValues(
-            top = insets.calculateTopPadding() + 4.dp,
-            bottom = insets.calculateBottomPadding() + 24.dp
-        )
-    ) {
-        item(key = "part_title") {
-            MeasureColumn {
-                Column(Modifier.padding(horizontal = design.spacing.gutter)) {
-                    Text(
-                        listOfNotNull(CatechismLabels.label(root, lang), CatechismLabels.rangeLabel(root.range, lang))
-                            .joinToString(" · "),
-                        style = styles.eyebrow,
-                        color = p.textSecondary
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        title,
-                        style = styles.title1,
-                        color = p.textPrimary,
-                        modifier = Modifier.semantics { heading() }
-                    )
-                    if (!description.isNullOrBlank()) {
-                        Spacer(Modifier.height(12.dp))
-                        Text(description, style = styles.callout, color = p.textSecondary)
-                    }
-                }
-            }
-        }
-
+    // Shared blocks: the tree and the key paragraphs are the same items in
+    // both orientations. The tree takes its rows so landscape can move the
+    // part's own "Read" entry to the fixed left pane without duplicating it.
+    val treeBlock: LazyListScope.(List<CccTreeRow>) -> Unit = { treeRows ->
         item(key = "part_tree") {
             Spacer(Modifier.height(28.dp))
             CatSectionHeader(lang.pick("Contenido", "Contents", "Conteúdo"))
             AppListGroup(Modifier.testTag("ccc_tree")) {
-                rows.forEachIndexed { i, row ->
+                treeRows.forEachIndexed { i, row ->
                     CccTreeRowView(
                         row = row,
                         lang = lang,
                         lastRead = lastRead,
                         open = row.node.id in expanded,
-                        divider = i < rows.lastIndex,
+                        divider = i < treeRows.lastIndex,
                         onToggle = onToggle,
                         onOpenNode = onOpenNode
                     )
                 }
             }
         }
-
+    }
+    val keyItems: LazyListScope.() -> Unit = {
         if (key.isNotEmpty()) {
             item(key = "key_paragraphs") {
                 Spacer(Modifier.height(32.dp))
@@ -1632,6 +1719,106 @@ private fun CccPartPage(
                 }
             }
         }
+    }
+
+    // Landscape phone: the part's identity and its "Read" entry stay fixed on
+    // the left; the contents tree and the key paragraphs scroll on the right.
+    if (landscape) {
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding()),
+            leftWidthFraction = 0.36f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        Text(
+                            eyebrowLabel,
+                            style = styles.eyebrow,
+                            color = p.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            title,
+                            style = styles.title2,
+                            color = p.textPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.semantics { heading() }
+                        )
+                        if (!description.isNullOrBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                description,
+                                style = styles.callout,
+                                color = p.textSecondary,
+                                maxLines = if (form.heightDp < 380.dp) 3 else 5,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        CatRow(
+                            title = lang.pick("Leer", "Read", "Ler"),
+                            subtitle = CatechismLabels.rangeLabel(root.range, lang) + " · " + root.paragraphCount.paragraphs(lang),
+                            leadingIcon = Icons.Outlined.MenuBook,
+                            minHeight = 52.dp,
+                            divider = false,
+                            onClick = { onOpenNode(root) },
+                            modifier = Modifier.testTag("ccc_read_${root.id}")
+                        )
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                ) {
+                    treeBlock(rows.drop(1))
+                    keyItems()
+                }
+            }
+        )
+        return
+    }
+
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        state = listState,
+        contentPadding = PaddingValues(
+            top = insets.calculateTopPadding() + 4.dp,
+            bottom = insets.calculateBottomPadding() + 24.dp
+        )
+    ) {
+        item(key = "part_title") {
+            MeasureColumn {
+                Column(Modifier.padding(horizontal = design.spacing.gutter)) {
+                    Text(
+                        eyebrowLabel,
+                        style = styles.eyebrow,
+                        color = p.textSecondary
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        title,
+                        style = styles.title1,
+                        color = p.textPrimary,
+                        modifier = Modifier.semantics { heading() }
+                    )
+                    if (!description.isNullOrBlank()) {
+                        Spacer(Modifier.height(12.dp))
+                        Text(description, style = styles.callout, color = p.textSecondary)
+                    }
+                }
+            }
+        }
+
+        treeBlock(rows)
+        keyItems()
     }
 }
 
@@ -1788,16 +1975,23 @@ private fun CccReaderPage(
         derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 300 }
     }
 
-    Box(Modifier.fillMaxSize()) {
-      Column(Modifier.fillMaxSize().padding(top = topInset)) {
+    val form = rememberLandscapeForm()
+    val landscape = form.isLandscape && form.heightDp < 500.dp
+
+    // Shared blocks so the portrait column and the landscape reading pane
+    // render exactly the same text, progress line, actions and sheets.
+    val breadcrumb: @Composable (Boolean) -> Unit = { compact ->
         CccBreadcrumb(
             path = path,
             lang = lang,
             onOpenPart = {
                 val part = structure.nodes.indexOf(path.first())
                 onOpenPart(part, path.map { it.id })
-            }
+            },
+            compact = compact
         )
+    }
+    val progressLine: @Composable () -> Unit = {
         // The reading line, under the breadcrumb, once the page has scrolled.
         Box(
             Modifier
@@ -1819,46 +2013,38 @@ private fun CccReaderPage(
                     .testTag("catechism_chapter_progress")
             )
         }
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxWidth().weight(1f).testTag("catechism_reader_scroll").graphicsLayer { alpha = if (ready) 1f else 0f },
-            contentPadding = PaddingValues(top = 0.dp, bottom = dockInset + 104.dp)
-        ) {
-            item(key = "paragraph_range_title") {
-                ReaderHeader(
-                    lang = lang,
-                    section = section,
-                    book = book,
-                    treeLabel = if (fromTree) structure.nodeForRange(section.firstNumber, section.lastNumber)
-                        ?.let { CatechismLabels.label(it, lang) } else null
-                )
-            }
-            items(count, key = { "paragraph_${section.firstNumber + it}" }) { offset ->
-                val number = section.firstNumber + offset
-                ParagraphBlock(
-                    repository = repository,
-                    lang = lang,
-                    number = number,
-                    focused = focus == number
-                )
-            }
-            item(key = "paragraph_navigation") {
-                ReaderFooter(
-                    lang = lang,
-                    previous = previous,
-                    next = next,
-                    onOpenSection = { onOpenSection(it, null) },
-                    onIndex = onIndex
-                )
-            }
+    }
+    val readerItems: LazyListScope.() -> Unit = {
+        item(key = "paragraph_range_title") {
+            ReaderHeader(
+                lang = lang,
+                section = section,
+                book = book,
+                treeLabel = if (fromTree) structure.nodeForRange(section.firstNumber, section.lastNumber)
+                    ?.let { CatechismLabels.label(it, lang) } else null
+            )
         }
-      }
-
-        AppActionBar(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = dockInset + 12.dp)
-        ) {
+        items(count, key = { "paragraph_${section.firstNumber + it}" }) { offset ->
+            val number = section.firstNumber + offset
+            ParagraphBlock(
+                repository = repository,
+                lang = lang,
+                number = number,
+                focused = focus == number
+            )
+        }
+        item(key = "paragraph_navigation") {
+            ReaderFooter(
+                lang = lang,
+                previous = previous,
+                next = next,
+                onOpenSection = { onOpenSection(it, null) },
+                onIndex = onIndex
+            )
+        }
+    }
+    val actionBar: @Composable () -> Unit = {
+        AppActionBar(Modifier.padding(bottom = dockInset + 12.dp)) {
             AppActionBarItem(
                 icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
                 contentDescription = lang.pick("Contenido", "Contents", "Conteúdo"),
@@ -1873,23 +2059,77 @@ private fun CccReaderPage(
             )
         }
     }
+    val sheets: @Composable () -> Unit = {
+        when (sheet) {
+            1 -> ContentsSheet(
+                repository = repository,
+                lang = lang,
+                current = section,
+                onDismiss = { sheet = 0 },
+                onOpenSection = { sheet = 0; onOpenSection(it, null) },
+                onGoTo = { n ->
+                    sheet = 0
+                    repository.catechismSectionFor(n)?.let { onOpenSection(it, n) }
+                },
+                onIndex = { sheet = 0; onIndex() }
+            )
 
-    when (sheet) {
-        1 -> ContentsSheet(
-            repository = repository,
-            lang = lang,
-            current = section,
-            onDismiss = { sheet = 0 },
-            onOpenSection = { sheet = 0; onOpenSection(it, null) },
-            onGoTo = { n ->
-                sheet = 0
-                repository.catechismSectionFor(n)?.let { onOpenSection(it, n) }
-            },
-            onIndex = { sheet = 0; onIndex() }
-        )
-
-        2 -> ReaderAppearanceSheet(lang) { sheet = 0 }
+            2 -> ReaderAppearanceSheet(lang) { sheet = 0 }
+        }
     }
+
+    // Landscape phone: the book's navigation becomes a fixed left index (part
+    // chips + the chosen part's sections) and the article text keeps the right
+    // pane with the only reading scroll. The breadcrumb compresses to one line
+    // so the text starts high; the action bar still floats over the reading.
+    if (landscape) {
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = topInset, bottom = insets.calculateBottomPadding()),
+            leftWidthFraction = 0.34f,
+            left = {
+                CccReaderIndexPane(
+                    repository = repository,
+                    lang = lang,
+                    current = section,
+                    onOpenSection = { onOpenSection(it, null) }
+                )
+            },
+            right = {
+                Box(Modifier.fillMaxSize()) {
+                    Column(Modifier.fillMaxSize()) {
+                        breadcrumb(true)
+                        progressLine()
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxWidth().weight(1f).testTag("catechism_reader_scroll").graphicsLayer { alpha = if (ready) 1f else 0f },
+                            contentPadding = PaddingValues(top = 0.dp, bottom = dockInset + 104.dp)
+                        ) { readerItems() }
+                    }
+                    Box(Modifier.align(Alignment.BottomCenter)) { actionBar() }
+                }
+            }
+        )
+        sheets()
+        return
+    }
+
+    Box(Modifier.fillMaxSize()) {
+      Column(Modifier.fillMaxSize().padding(top = topInset)) {
+        breadcrumb(false)
+        progressLine()
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxWidth().weight(1f).testTag("catechism_reader_scroll").graphicsLayer { alpha = if (ready) 1f else 0f },
+            contentPadding = PaddingValues(top = 0.dp, bottom = dockInset + 104.dp)
+        ) { readerItems() }
+      }
+        Box(Modifier.align(Alignment.BottomCenter)) { actionBar() }
+    }
+
+    sheets()
 }
 
 /**
@@ -1901,7 +2141,9 @@ private fun CccReaderPage(
 private fun CccBreadcrumb(
     path: List<CatechismNode>,
     lang: AppLanguage,
-    onOpenPart: (CatechismNode) -> Unit
+    onOpenPart: (CatechismNode) -> Unit,
+    /** One quiet line for the landscape reading pane; portrait keeps the full two-line crumb. */
+    compact: Boolean = false
 ) {
     if (path.isEmpty()) return
     val design = LocalAppDesign.current
@@ -1949,10 +2191,10 @@ private fun CccBreadcrumb(
                         .testTag("back_to_catechism_outline")
                     else Modifier
                 )
-                .padding(horizontal = design.spacing.gutter, vertical = 6.dp)
+                .padding(horizontal = design.spacing.gutter, vertical = if (compact) 4.dp else 6.dp)
         ) {
-            Text(trail, style = styles.caption, color = p.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (title != null) {
+            Text(trail, style = styles.caption, color = p.textSecondary, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
+            if (title != null && !compact) {
                 Text(title, style = styles.footnote, color = p.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
@@ -2215,6 +2457,121 @@ private fun ReaderAppearanceSheet(lang: AppLanguage, onDismiss: () -> Unit) {
     )
 }
 
+/**
+ * One section row of the contents index. Shared by the contents sheet (both
+ * orientations) and the landscape reader's fixed left index, so the row, its
+ * check mark and its tag can never drift apart. [tag] is null for the inline
+ * landscape index: the sheet keeps the canonical `catechism_contents_*` tags,
+ * and the two must not coexist with the same tag when the sheet opens.
+ */
+@Composable
+private fun CccContentsRow(
+    section: CatechismOutlineSection,
+    isCurrent: Boolean,
+    divider: Boolean,
+    lang: AppLanguage,
+    onClick: () -> Unit,
+    tag: String? = "catechism_contents_${section.firstNumber}"
+) {
+    val p = LocalAppDesign.current.palette
+    CatRow(
+        title = section.title.get(lang),
+        subtitle = "§§ ${section.firstNumber}–${section.lastNumber}",
+        chevron = false,
+        divider = divider,
+        trailing = if (isCurrent) ({
+            Icon(Icons.Filled.Check, null, tint = p.textPrimary, modifier = Modifier.size(18.dp))
+        }) else null,
+        onClick = onClick,
+        modifier = if (tag != null) Modifier.testTag(tag) else Modifier
+    )
+}
+
+/**
+ * The landscape reader's left pane: the book's navigation, fixed beside the
+ * text. Part chips and the current section are always visible; the section
+ * list of the chosen part scrolls inside its own pane (the reading text keeps
+ * the only scroll of the reading pane). Rows reuse [CccContentsRow].
+ */
+@Composable
+private fun CccReaderIndexPane(
+    repository: CatholicDataRepository,
+    lang: AppLanguage,
+    current: CatechismOutlineSection,
+    onOpenSection: (CatechismOutlineSection) -> Unit
+) {
+    val design = LocalAppDesign.current
+    val styles = LocalAppTextStyles.current
+    val p = design.palette
+    val currentPart = CccStructure.sectionFor(current.firstNumber)?.part ?: 0
+    var chosen by remember(current.firstNumber) { mutableIntStateOf(currentPart) }
+    val sections = remember(chosen) {
+        repository.catechismOutline.filter {
+            (CccStructure.sectionFor(it.firstNumber)?.part ?: 0) == chosen
+        }
+    }
+    val listState = rememberLazyListState()
+    LaunchedEffect(current.firstNumber, chosen) {
+        val i = sections.indexOfFirst { it.firstNumber == current.firstNumber }
+        if (i >= 0) listState.scrollToItem(i)
+    }
+    PaneSurface(contentPadding = PaddingValues(0.dp)) {
+        Column(Modifier.fillMaxSize()) {
+            Text(
+                current.title.get(lang),
+                style = styles.title3,
+                color = p.textPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = design.spacing.gutter)
+                    .padding(top = 12.dp)
+                    .semantics { heading() }
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "§§ ${current.firstNumber}–${current.lastNumber} · " + current.paragraphCount.paragraphs(lang),
+                style = styles.footnote,
+                color = p.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter)
+            )
+            Spacer(Modifier.height(6.dp))
+            // The same five part chips as the contents sheet, without the sheet's gutter.
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = design.spacing.gutter, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(lang.pick("Prólogo", "Prologue", "Prólogo"), "I", "II", "III", "IV")
+                    .forEachIndexed { i, label ->
+                        AppKitChip(label, i == chosen, { chosen = i })
+                    }
+            }
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentPadding = PaddingValues(bottom = 10.dp)
+            ) {
+                itemsIndexed(sections, key = { _, s -> s.firstNumber }) { i, section ->
+                    CccContentsRow(
+                        section = section,
+                        isCurrent = section.firstNumber == current.firstNumber,
+                        divider = i < sections.lastIndex,
+                        lang = lang,
+                        onClick = { onOpenSection(section) },
+                        tag = null
+                    )
+                }
+            }
+        }
+    }
+}
+
 /** Contents of the book: a part at a time, plus "go to §". */
 @Composable
 private fun ContentsSheet(
@@ -2262,17 +2619,12 @@ private fun ContentsSheet(
         }
         AppListGroup {
             sections.forEachIndexed { i, section ->
-                val isCurrent = section.firstNumber == current.firstNumber
-                CatRow(
-                    title = section.title.get(lang),
-                    subtitle = "§§ ${section.firstNumber}–${section.lastNumber}",
-                    chevron = false,
+                CccContentsRow(
+                    section = section,
+                    isCurrent = section.firstNumber == current.firstNumber,
                     divider = i < sections.lastIndex,
-                    trailing = if (isCurrent) ({
-                        Icon(Icons.Filled.Check, null, tint = p.textPrimary, modifier = Modifier.size(18.dp))
-                    }) else null,
-                    onClick = { onOpenSection(section) },
-                    modifier = Modifier.testTag("catechism_contents_${section.firstNumber}")
+                    lang = lang,
+                    onClick = { onOpenSection(section) }
                 )
             }
         }
@@ -2385,80 +2737,44 @@ private fun CccCompendiumPage(
         else groups
     }
     val shownNumbers = shown.sumOf { it.size }
+    val form = rememberLandscapeForm()
+    val landscape = form.isLandscape && form.heightDp < 500.dp
 
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            top = insets.calculateTopPadding() + 4.dp,
-            bottom = insets.calculateBottomPadding() + 24.dp
+    // Shared blocks: search field, editorial notice, count label and the
+    // question rows are identical in both orientations.
+    val searchField: @Composable (Dp?) -> Unit = { gutter ->
+        CatSearchField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = lang.pick(
+                "Buscar en el Compendio",
+                "Search the Compendium",
+                "Pesquisar no Compêndio"
+            ),
+            clearLabel = lang.pick("Limpiar", "Clear", "Limpar"),
+            fieldTag = "compendium_search_input",
+            gutter = gutter
         )
-    ) {
-        item(key = "compendium_title") {
-            MeasureColumn {
-                Column(Modifier.padding(horizontal = design.spacing.gutter)) {
-                    Text(
-                        CatechismCompendiumData.editorialTitle.get(lang),
-                        style = styles.title1,
-                        color = p.textPrimary,
-                        modifier = Modifier.semantics { heading() }
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        CatechismCompendiumData.editorialNotice.get(lang),
-                        style = styles.subhead,
-                        color = p.textSecondary
-                    )
-                }
-            }
-        }
-        item(key = "compendium_search_row") {
-            Column {
-                Spacer(Modifier.height(20.dp))
-                CatSearchField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    placeholder = lang.pick(
-                        "Buscar en el Compendio",
-                        "Search the Compendium",
-                        "Pesquisar no Compêndio"
-                    ),
-                    clearLabel = lang.pick("Limpiar", "Clear", "Limpar"),
-                    fieldTag = "compendium_search_input"
-                )
-                Spacer(Modifier.height(10.dp))
-            }
-        }
-        item(key = "compendium_filters") {
-            AppFilterMenu(
-                prefix = lang.pick("Parte", "Part", "Parte"),
-                options = compendiumPartChips(lang),
-                selectedIndex = partFilter,
-                onSelect = onPartFilter,
-                tag = "compendium_part_picker"
-            )
-        }
-        item(key = "compendium_count") {
-            Text(
-                if (query.isNotBlank()) {
-                    lang.pick(
-                        "$shownNumbers preguntas coinciden",
-                        "$shownNumbers questions match",
-                        "$shownNumbers perguntas correspondem"
-                    )
-                } else if (partFilter in 1..4) {
-                    lang.pick("$shownNumbers preguntas", "$shownNumbers questions", "$shownNumbers perguntas")
-                } else {
-                    lang.pick("$totalNumbers preguntas", "$totalNumbers questions", "$totalNumbers perguntas")
-                },
-                style = styles.footnote,
-                color = p.textSecondary,
-                modifier = Modifier
-                    .padding(horizontal = design.spacing.gutter)
-                    .padding(top = 14.dp, bottom = 12.dp)
-                    .testTag("compendium_count")
-            )
-        }
-
+    }
+    val noticeText: @Composable () -> Unit = {
+        Text(
+            CatechismCompendiumData.editorialNotice.get(lang),
+            style = styles.subhead,
+            color = p.textSecondary
+        )
+    }
+    val countLabel = if (query.isNotBlank()) {
+        lang.pick(
+            "$shownNumbers preguntas coinciden",
+            "$shownNumbers questions match",
+            "$shownNumbers perguntas correspondem"
+        )
+    } else if (partFilter in 1..4) {
+        lang.pick("$shownNumbers preguntas", "$shownNumbers questions", "$shownNumbers perguntas")
+    } else {
+        lang.pick("$totalNumbers preguntas", "$totalNumbers questions", "$totalNumbers perguntas")
+    }
+    val questionItems: LazyListScope.() -> Unit = {
         if (shown.isEmpty()) {
             item(key = "compendium_empty") {
                 AppEmptyState(
@@ -2512,6 +2828,122 @@ private fun CccCompendiumPage(
             }
         }
     }
+
+    // Landscape phone: title, search, part filter and count stay fixed on the
+    // left; the questions scroll on the right.
+    if (landscape) {
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding()),
+            leftWidthFraction = 0.36f,
+            left = {
+                PaneSurface(contentPadding = PaddingValues(0.dp)) {
+                    Column(Modifier.fillMaxSize()) {
+                        Text(
+                            CatechismCompendiumData.editorialTitle.get(lang),
+                            style = styles.title2,
+                            color = p.textPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = design.spacing.gutter)
+                                .padding(top = 12.dp)
+                                .semantics { heading() }
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        searchField(null)
+                        Spacer(Modifier.height(8.dp))
+                        AppFilterMenu(
+                            prefix = lang.pick("Parte", "Part", "Parte"),
+                            options = compendiumPartChips(lang),
+                            selectedIndex = partFilter,
+                            onSelect = onPartFilter,
+                            tag = "compendium_part_picker"
+                        )
+                        Text(
+                            countLabel,
+                            style = styles.footnote,
+                            color = p.textSecondary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = design.spacing.gutter)
+                                .padding(top = 10.dp)
+                                .testTag("compendium_count")
+                        )
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                ) {
+                    item(key = "compendium_notice") {
+                        MeasureColumn {
+                            Column(Modifier.padding(horizontal = design.spacing.gutter)) { noticeText() }
+                        }
+                    }
+                    questionItems()
+                }
+            }
+        )
+        return
+    }
+
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            top = insets.calculateTopPadding() + 4.dp,
+            bottom = insets.calculateBottomPadding() + 24.dp
+        )
+    ) {
+        item(key = "compendium_title") {
+            MeasureColumn {
+                Column(Modifier.padding(horizontal = design.spacing.gutter)) {
+                    Text(
+                        CatechismCompendiumData.editorialTitle.get(lang),
+                        style = styles.title1,
+                        color = p.textPrimary,
+                        modifier = Modifier.semantics { heading() }
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    noticeText()
+                }
+            }
+        }
+        item(key = "compendium_search_row") {
+            Column {
+                Spacer(Modifier.height(20.dp))
+                searchField(null)
+                Spacer(Modifier.height(10.dp))
+            }
+        }
+        item(key = "compendium_filters") {
+            AppFilterMenu(
+                prefix = lang.pick("Parte", "Part", "Parte"),
+                options = compendiumPartChips(lang),
+                selectedIndex = partFilter,
+                onSelect = onPartFilter,
+                tag = "compendium_part_picker"
+            )
+        }
+        item(key = "compendium_count") {
+            Text(
+                countLabel,
+                style = styles.footnote,
+                color = p.textSecondary,
+                modifier = Modifier
+                    .padding(horizontal = design.spacing.gutter)
+                    .padding(top = 14.dp, bottom = 12.dp)
+                    .testTag("compendium_count")
+            )
+        }
+
+        questionItems()
+    }
 }
 
 @Composable
@@ -2531,6 +2963,136 @@ private fun CccAnswerPage(
     val group = groups.getOrNull(index)
     val question = group?.entry?.question?.get(lang)?.withoutQuestionPrefix().orEmpty()
     AppInlineTitle(CatechismCompendiumData.editorialTitle.get(lang))
+    val form = rememberLandscapeForm()
+    val landscape = form.isLandscape && form.heightDp < 500.dp
+    val entry = group?.entry
+    val ref = entry?.let { firstCccRange(it.cccReference) }
+    val questionLabel = if (group != null) {
+        CatechismCompendiumData.editorialTitle.get(lang) + " · " +
+            if (group.size > 1) {
+                lang.pick("Preguntas", "Questions", "Perguntas") + " " + rangeLabel(group.first, group.last)
+            } else {
+                lang.pick("Pregunta", "Question", "Pergunta") + " ${group.first}"
+            }
+    } else ""
+
+    // Shared blocks: the answer text, the "read in the Catechism" capsule and
+    // the next-question card are the same composables in both orientations.
+    val answerText: (@Composable () -> Unit)? = if (entry != null) {
+        {
+            Text(entry.answer.get(lang), style = styles.reading, color = p.textPrimary)
+            Spacer(Modifier.height(18.dp))
+            Text(CatechismCompendiumData.editorialNotice.get(lang), style = styles.footnote, color = p.textSecondary)
+            Spacer(Modifier.height(18.dp))
+            Text(
+                CccStructure.ordinal(entry.part.coerceIn(1, 4), lang) + " · " +
+                    CccStructure.partTitles[entry.part.coerceIn(1, 4)].get(lang),
+                style = styles.footnote,
+                color = p.textSecondary
+            )
+        }
+    } else null
+    val cccCapsule: (@Composable () -> Unit)? = if (ref != null) {
+        {
+            val (a, b) = ref
+            AppSecondaryCapsule(
+                label = lang.pick("Leer en el Catecismo", "Read in the Catechism", "Ler no Catecismo") +
+                    " · " + (if (b != null) "§§ $a–$b" else "§ $a"),
+                onClick = { onOpenParagraph(a) },
+                tag = "compendium_open_ccc_$a"
+            )
+        }
+    } else null
+    val nextGroup = groups.getOrNull(index + 1)
+    val nextCard: (@Composable () -> Unit)? = if (nextGroup != null) {
+        {
+            MeasureColumn {
+                AppGlassSurface(
+                    Modifier
+                        .padding(horizontal = design.spacing.gutter)
+                        .padding(top = 32.dp)
+                        .fillMaxWidth()
+                        .testTag("compendium_next_question"),
+                    onClick = { onOpenAnswer(nextGroup.first) },
+                    contentPadding = PaddingValues(design.spacing.cardPadding)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                lang.pick("Siguiente pregunta", "Next question", "Pergunta seguinte"),
+                                style = styles.caption,
+                                color = p.textSecondary
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                nextGroup.entry.question.get(lang).withoutQuestionPrefix(),
+                                style = styles.headline,
+                                color = p.textPrimary
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        AppChevron()
+                    }
+                }
+            }
+        }
+    } else null
+
+    // Landscape phone: the question and its action stay fixed on the left;
+    // the answer reads on the right with the only scroll.
+    if (landscape) {
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding()),
+            leftWidthFraction = 0.38f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        if (group != null) {
+                            Text(
+                                questionLabel,
+                                style = styles.footnote,
+                                color = p.textSecondary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                question,
+                                style = styles.title2,
+                                color = p.textPrimary,
+                                maxLines = 4,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.semantics { heading() }
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        if (cccCapsule != null) cccCapsule()
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp)
+                ) {
+                    if (group != null) {
+                        if (answerText != null) {
+                            item(key = "answer") {
+                                MeasureColumn {
+                                    Column(Modifier.padding(horizontal = design.spacing.gutter)) { answerText() }
+                                }
+                            }
+                        }
+                        if (nextCard != null) item(key = "answer_next") { nextCard() }
+                    }
+                }
+            }
+        )
+        return
+    }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -2540,18 +3102,11 @@ private fun CccAnswerPage(
         )
     ) {
         if (group == null) return@LazyColumn
-        val entry = group.entry
-        val ref = firstCccRange(entry.cccReference)
         item(key = "answer") {
             MeasureColumn {
                 Column(Modifier.padding(horizontal = design.spacing.gutter)) {
                     Text(
-                        CatechismCompendiumData.editorialTitle.get(lang) + " · " +
-                            if (group.size > 1) {
-                                lang.pick("Preguntas", "Questions", "Perguntas") + " " + rangeLabel(group.first, group.last)
-                            } else {
-                                lang.pick("Pregunta", "Question", "Pergunta") + " ${group.first}"
-                            },
+                        questionLabel,
                         style = styles.eyebrow,
                         color = p.textSecondary
                     )
@@ -2563,62 +3118,15 @@ private fun CccAnswerPage(
                         modifier = Modifier.semantics { heading() }
                     )
                     Spacer(Modifier.height(18.dp))
-                    Text(entry.answer.get(lang), style = styles.reading, color = p.textPrimary)
-                    Spacer(Modifier.height(18.dp))
-                    Text(CatechismCompendiumData.editorialNotice.get(lang), style = styles.footnote, color = p.textSecondary)
-                    Spacer(Modifier.height(18.dp))
-                    Text(
-                        CccStructure.ordinal(entry.part.coerceIn(1, 4), lang) + " · " +
-                            CccStructure.partTitles[entry.part.coerceIn(1, 4)].get(lang),
-                        style = styles.footnote,
-                        color = p.textSecondary
-                    )
-                    if (ref != null) {
+                    if (answerText != null) answerText()
+                    if (cccCapsule != null) {
                         Spacer(Modifier.height(20.dp))
-                        val (a, b) = ref
-                        AppSecondaryCapsule(
-                            label = lang.pick("Leer en el Catecismo", "Read in the Catechism", "Ler no Catecismo") +
-                                " · " + (if (b != null) "§§ $a–$b" else "§ $a"),
-                            onClick = { onOpenParagraph(a) },
-                            tag = "compendium_open_ccc_$a"
-                        )
+                        cccCapsule()
                     }
                 }
             }
         }
-        groups.getOrNull(index + 1)?.let { next ->
-            item(key = "answer_next") {
-                MeasureColumn {
-                    AppGlassSurface(
-                        Modifier
-                            .padding(horizontal = design.spacing.gutter)
-                            .padding(top = 32.dp)
-                            .fillMaxWidth()
-                            .testTag("compendium_next_question"),
-                        onClick = { onOpenAnswer(next.first) },
-                        contentPadding = PaddingValues(design.spacing.cardPadding)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    lang.pick("Siguiente pregunta", "Next question", "Pergunta seguinte"),
-                                    style = styles.caption,
-                                    color = p.textSecondary
-                                )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    next.entry.question.get(lang).withoutQuestionPrefix(),
-                                    style = styles.headline,
-                                    color = p.textPrimary
-                                )
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            AppChevron()
-                        }
-                    }
-                }
-            }
-        }
+        if (nextCard != null) item(key = "answer_next") { nextCard() }
     }
 }
 
@@ -2637,6 +3145,101 @@ private fun CccFormulasPage(
     val styles = LocalAppTextStyles.current
     val p = design.palette
     AppInlineTitle(lang.pick("Fórmulas de la doctrina", "Formulas of doctrine", "Fórmulas da doutrina"))
+    val formulas = repository.doctrineFormulas
+    val form = rememberLandscapeForm()
+    val landscape = form.isLandscape && form.heightDp < 500.dp
+    var selected by rememberSaveable { mutableIntStateOf(0) }
+    val selectedFormula = formulas.getOrNull(selected.coerceIn(0, (formulas.size - 1).coerceAtLeast(0)))
+
+    // Shared block: one formula's card, identical in both orientations.
+    val formulaBlock: @Composable (DoctrineFormula) -> Unit = { formula ->
+        Column(Modifier.padding(top = 24.dp)) {
+            CatSectionHeader(formula.title.get(lang))
+            AppGlassSurface(
+                Modifier.padding(horizontal = design.spacing.gutter).fillMaxWidth(),
+                contentPadding = PaddingValues(design.spacing.cardPadding)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    formula.items.forEach { item ->
+                        FormulaItem(item.get(lang))
+                    }
+                }
+            }
+        }
+    }
+
+    // Landscape phone: a fixed index of the formulas on the left, the chosen
+    // formula's text on the right with the only reading scroll.
+    if (landscape) {
+        LandscapeTwoPane(
+            form = form,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = insets.calculateTopPadding(), bottom = insets.calculateBottomPadding()),
+            leftWidthFraction = 0.34f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize()) {
+                        Text(
+                            lang.pick(
+                                "Fórmulas de la doctrina católica",
+                                "Formulas of Catholic doctrine",
+                                "Fórmulas da doutrina católica"
+                            ),
+                            style = styles.title2,
+                            color = p.textPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .semantics { heading() }
+                                .testTag("catechism_formulas_title")
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        LazyColumn(
+                            Modifier.fillMaxWidth().weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            itemsIndexed(formulas, key = { _, f -> f.title.es }) { i, formula ->
+                                val isSelected = i == selected
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 52.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(if (isSelected) p.accentMuted else p.raised)
+                                        .lumenPress({ selected = i }, 0.98f)
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    Text(
+                                        formula.title.get(lang),
+                                        style = if (isSelected) styles.subhead.copy(fontWeight = FontWeight.SemiBold) else styles.subhead,
+                                        color = p.textPrimary,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 0.dp, bottom = 16.dp)
+                ) {
+                    if (selectedFormula != null) {
+                        item(key = selectedFormula.title.es) {
+                            MeasureColumn { formulaBlock(selectedFormula) }
+                        }
+                    }
+                }
+            }
+        )
+        return
+    }
+
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -2662,22 +3265,8 @@ private fun CccFormulasPage(
                 )
             }
         }
-        items(repository.doctrineFormulas, key = { it.title.es }) { formula ->
-            MeasureColumn {
-                Column(Modifier.padding(top = 24.dp)) {
-                    CatSectionHeader(formula.title.get(lang))
-                    AppGlassSurface(
-                        Modifier.padding(horizontal = design.spacing.gutter).fillMaxWidth(),
-                        contentPadding = PaddingValues(design.spacing.cardPadding)
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            formula.items.forEach { item ->
-                                FormulaItem(item.get(lang))
-                            }
-                        }
-                    }
-                }
-            }
+        items(formulas, key = { it.title.es }) { formula ->
+            MeasureColumn { formulaBlock(formula) }
         }
     }
 }

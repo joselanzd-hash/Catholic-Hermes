@@ -17,8 +17,7 @@ Resultado: en horizontal nada esencial cabe en pantalla; el ancho sobra y el alt
 
 ## b. Layout propuesto (zonas y dp)
 
-Condición de forma (misma ventana que el precedente del Rosario):
-`form.useLandscapeLayout && maxHeight < 480.dp && maxHeight >= 340.dp` dentro de `BoxWithConstraints`. Vertical y tablet (alto ≥ 480) conservan el `LazyColumn` original.
+Condición de forma: `form.isCompactPhone` (token compartido de `LandscapeForm`: ancho ≥ 600 dp y alto en [340, 480), la misma ventana que el precedente del Rosario). El `BoxWithConstraints` vive SOLO dentro de esa rama: envolver el `LazyColumn` vertical en un layout de subcomposición hace que el looper de Robolectric nunca idle (bucle de prefetch de los lazy), así que la raíz vertical conserva exactamente su estructura original. Vertical y tablet (alto ≥ 480) conservan el `LazyColumn` original.
 
 ```
 Column (padding top/bottom = insets del armazón)
@@ -63,7 +62,7 @@ Cromo del armazón: el velo/degradado superior del scaffold sigue al scroll acum
 ## d. Riesgos para el vertical
 
 1. La extracción de los 6 items es movimiento verbatim con los mismos `remember`/tags/keys; el render vertical es idéntico. Verificado con `HomePrayerPrioritiesTest` (orden tiempo→oración→prácticas, contador «3», scroll a la acción, toggle→versículo→lector).
-2. `BoxWithConstraints` envuelve también el vertical: mismas constraints, sin cambio de medida.
+2. La raíz vertical es exactamente la original (`LazyColumn` con el `modifier` de la pantalla, sin envoltorios): el `BoxWithConstraints` solo se compone en la rama landscape.
 3. `rememberLandscapeForm()` se evalúa siempre pero solo lee `LocalConfiguration` (estable, sin bucles).
 4. Texto muy grande (fontScale ≥ 1.3): las filas del índice crecen y el panel izquierdo fijo puede desbordar en los altos más bajos; el vertical no se afecta. Mitigación futura: raíl con scroll propio solo en ese caso extremo (hoy prohibido por la regla 1).
 5. El reset del cromo solo se compone en la rama landscape; el vertical conserva el comportamiento scroll-edge original.

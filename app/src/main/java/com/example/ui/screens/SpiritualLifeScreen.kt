@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -129,12 +130,16 @@ import com.example.ui.design.AppMenuItem
 import com.example.ui.design.AppPrimaryCapsule
 import com.example.ui.design.AppProgressBar
 import com.example.ui.design.AppRoundPlayButton
+import com.example.ui.design.CompactHeader
+import com.example.ui.design.LandscapeTwoPane
 import com.example.ui.design.LumenGlyphs
+import com.example.ui.design.PaneSurface
 import com.example.ui.design.appDockInset
 import com.example.ui.design.lumenCanvas
 import com.example.ui.design.lumenGlass
 import com.example.ui.design.lumenPress
 import com.example.ui.design.rememberFirstAsset
+import com.example.ui.design.rememberLandscapeForm
 import com.example.ui.design.softShadow
 import com.example.ui.theme.LocalAppDesign
 import com.example.ui.theme.LocalAppTextStyles
@@ -456,6 +461,179 @@ private fun SpiritualHub(
 
     val showJournal = focus != SpiritualFocus.PRACTICES
     val showPractices = focus != SpiritualFocus.JOURNAL
+    val form = rememberLandscapeForm()
+    val granted = entries?.count { it.isAnswered } ?: 0
+    val hubTitle = when (focus) {
+        SpiritualFocus.JOURNAL -> language.pick("Diario", "Journal", "Diário")
+        SpiritualFocus.PRACTICES -> language.pick("Prácticas", "Practices", "Práticas")
+        SpiritualFocus.ALL -> language.pick("Vida espiritual", "Spiritual life", "Vida espiritual")
+    }
+
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val confessionButton: @Composable () -> Unit = {
+        com.example.ui.design.AppSecondaryButton(
+            language.pick("Confesión", "Confession", "Confissão"), onOpenConfession,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter).testTag("spiritual_confession_entry")
+        )
+    }
+    val practicesBlock: @Composable () -> Unit = {
+        Column {
+            if (focus == SpiritualFocus.ALL) SectionTitle(language.pick("Prácticas", "Practices", "Práticas"), top = 0.dp)
+            Box(Modifier.testTag("spiritual_life_learn_picker")) {
+                if (focus == SpiritualFocus.PRACTICES) {
+                    // Its own section: a list, so the names and what they hold read in full at any text size.
+                    com.example.ui.design.AppListGroup(Modifier.padding(horizontal = design.spacing.gutter)) {
+                        practices.forEach { practice ->
+                            com.example.ui.design.AppListRow(
+                                title = practice.label,
+                                subtitle = practice.subtitle,
+                                leadingIcon = practice.icon,
+                                onClick = { onOpenPage(practice.page) }
+                            )
+                        }
+                    }
+                } else AppGrid(practices, columns = 3) { practice, cell ->
+                    AppCategoryTile(
+                        label = practice.label,
+                        icon = practice.icon,
+                        onClick = { onOpenPage(practice.page) },
+                        modifier = cell
+                    )
+                }
+            }
+        }
+    }
+    val journalTitleBlock: @Composable (showCount: Boolean) -> Unit = { showCount ->
+        Column(
+            Modifier
+                .padding(horizontal = design.spacing.gutter)
+                .padding(top = design.spacing.sectionGap)
+        ) {
+            // Inside «Mi camino» the header already says «Diario».
+            if (focus == SpiritualFocus.ALL) Text(language.pick("Diario", "Journal", "Diário"), style = styles.headline, color = p.textPrimary)
+            if (showCount && !entries.isNullOrEmpty()) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    journalCountLine(entries.size, granted, language),
+                    style = styles.footnote,
+                    color = p.textSecondary
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+    }
+    val journalItems: LazyListScope.() -> Unit = {
+        when {
+            entries == null -> {
+                items(2, key = { "journal_skeleton_$it" }) { JournalSkeleton() }
+            }
+
+            entries.isEmpty() -> item(key = "journal_empty") {
+                JournalEmptyCard(language, onCompose)
+            }
+
+            else -> {
+                val showFilters = entries.size >= 6
+                if (showFilters) {
+                    item(key = "journal_filters") {
+                        val labels = listOf(language.pick("Todas", "All", "Todas")) +
+                            JournalCategories.map { language.pick(it.pluralEs, it.pluralEn, it.pluralPt) } +
+                            language.pick("Concedidas", "Granted", "Concedidas")
+                        AppFilterMenu(language.pick("Mostrar", "Show", "Mostrar"), labels, filterIndex, onFilter, tag = "journal_filter_menu")
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+                val effectiveFilter = if (showFilters) filterIndex else 0
+                val shown = entries.filter { entry ->
+                    when (effectiveFilter) {
+                        0 -> true
+                        in 1..JournalCategories.size -> entry.category == JournalCategories[effectiveFilter - 1].key
+                        else -> entry.isAnswered
+                    }
+                }
+                if (shown.isEmpty()) {
+                    item(key = "journal_filtered_empty") {
+                        Text(
+                            language.pick("Nada en esta categoría todavía.", "Nothing in this category yet.", "Nada nesta categoria ainda."),
+                            style = styles.subhead,
+                            color = p.textSecondary,
+                            modifier = Modifier.padding(horizontal = design.spacing.gutter + 4.dp, vertical = 12.dp)
+                        )
+                    }
+                }
+                items(shown, key = { it.id }) { entry ->
+                    JournalEntryCard(
+                        entry = entry,
+                        language = language,
+                        onToggleAnswered = { onToggleAnswered(entry) },
+                        onDelete = { onRequestDelete(entry) },
+                        modifier = Modifier.padding(horizontal = design.spacing.gutter).padding(bottom = 12.dp)
+                    )
+                }
+            }
+        }
+    }
+
+    // Landscape phone: the art header alone fills a 390dp-tall screen. The
+    // header, Confession, the journal summary and «Nueva entrada» become a
+    // fixed left pane; practices and the journal history share the right pane,
+    // which owns the only scroll.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        if (!showJournal) {
+            // Practices alone: a compact header over the single scrolling list.
+            Column(Modifier.fillMaxSize()) {
+                CompactHeader(title = hubTitle, form = form)
+                LazyColumn(
+                    Modifier.fillMaxSize().weight(1f),
+                    state = listState,
+                    contentPadding = PaddingValues(bottom = dock + 16.dp)
+                ) {
+                    item(key = "life_practices") { practicesBlock() }
+                }
+            }
+            return
+        }
+        LandscapeTwoPane(
+            form = form,
+            leftWidthFraction = 0.36f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CompactHeader(title = hubTitle, form = form)
+                        confessionButton()
+                        if (!entries.isNullOrEmpty()) {
+                            Text(
+                                journalCountLine(entries.size, granted, language),
+                                style = styles.footnote,
+                                color = p.textSecondary
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        AppPrimaryCapsule(
+                            label = language.pick("Nueva entrada", "New entry", "Nova entrada"),
+                            onClick = { onCompose(null, null) },
+                            icon = Icons.Outlined.Add,
+                            fillWidth = true,
+                            // The tagged FAB exists exactly when portrait shows it.
+                            tag = if (!entries.isNullOrEmpty()) "add_journal_entry_fab" else null
+                        )
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(top = 8.dp, bottom = dock + 16.dp)
+                ) {
+                    if (showPractices) item(key = "life_practices") { practicesBlock() }
+                    if (focus == SpiritualFocus.ALL) item(key = "journal_title") { journalTitleBlock(false) }
+                    journalItems()
+                }
+            }
+        )
+        return
+    }
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -465,119 +643,17 @@ private fun SpiritualHub(
         ) {
             item(key = "life_header") {
                 AppDetailHeader(
-                    title = when (focus) {
-                        SpiritualFocus.JOURNAL -> language.pick("Diario", "Journal", "Diário")
-                        SpiritualFocus.PRACTICES -> language.pick("Prácticas", "Practices", "Práticas")
-                        SpiritualFocus.ALL -> language.pick("Vida espiritual", "Spiritual life", "Vida espiritual")
-                    },
+                    title = hubTitle,
                     assetPath = hero,
                     root = true
                 )
             }
-            if (showJournal) item(key = "confession_entry") {
-                com.example.ui.design.AppSecondaryButton(
-                    language.pick("Confesión", "Confession", "Confissão"), onOpenConfession,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = design.spacing.gutter).testTag("spiritual_confession_entry")
-                )
-            }
-            if (showPractices) item(key = "life_practices") {
-                Column {
-                    if (focus == SpiritualFocus.ALL) SectionTitle(language.pick("Prácticas", "Practices", "Práticas"), top = 0.dp)
-                    Box(Modifier.testTag("spiritual_life_learn_picker")) {
-                        if (focus == SpiritualFocus.PRACTICES) {
-                            // Its own section: a list, so the names and what they hold read in full at any text size.
-                            com.example.ui.design.AppListGroup(Modifier.padding(horizontal = design.spacing.gutter)) {
-                                practices.forEach { practice ->
-                                    com.example.ui.design.AppListRow(
-                                        title = practice.label,
-                                        subtitle = practice.subtitle,
-                                        leadingIcon = practice.icon,
-                                        onClick = { onOpenPage(practice.page) }
-                                    )
-                                }
-                            }
-                        } else AppGrid(practices, columns = 3) { practice, cell ->
-                            AppCategoryTile(
-                                label = practice.label,
-                                icon = practice.icon,
-                                onClick = { onOpenPage(practice.page) },
-                                modifier = cell
-                            )
-                        }
-                    }
-                }
-            }
+            if (showJournal) item(key = "confession_entry") { confessionButton() }
+            if (showPractices) item(key = "life_practices") { practicesBlock() }
 
-            if (showJournal) item(key = "journal_title") {
-                val granted = entries?.count { it.isAnswered } ?: 0
-                Column(
-                    Modifier
-                        .padding(horizontal = design.spacing.gutter)
-                        .padding(top = design.spacing.sectionGap)
-                ) {
-                    // Inside «Mi camino» the header already says «Diario».
-                    if (focus == SpiritualFocus.ALL) Text(language.pick("Diario", "Journal", "Diário"), style = styles.headline, color = p.textPrimary)
-                    if (!entries.isNullOrEmpty()) {
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            journalCountLine(entries.size, granted, language),
-                            style = styles.footnote,
-                            color = p.textSecondary
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
-                }
-            }
+            if (showJournal) item(key = "journal_title") { journalTitleBlock(true) }
 
-            if (showJournal) when {
-                entries == null -> {
-                    items(2, key = { "journal_skeleton_$it" }) { JournalSkeleton() }
-                }
-
-                entries.isEmpty() -> item(key = "journal_empty") {
-                    JournalEmptyCard(language, onCompose)
-                }
-
-                else -> {
-                    val showFilters = entries.size >= 6
-                    if (showFilters) {
-                        item(key = "journal_filters") {
-                            val labels = listOf(language.pick("Todas", "All", "Todas")) +
-                                JournalCategories.map { language.pick(it.pluralEs, it.pluralEn, it.pluralPt) } +
-                                language.pick("Concedidas", "Granted", "Concedidas")
-                            AppFilterMenu(language.pick("Mostrar", "Show", "Mostrar"), labels, filterIndex, onFilter, tag = "journal_filter_menu")
-                            Spacer(Modifier.height(8.dp))
-                        }
-                    }
-                    val effectiveFilter = if (showFilters) filterIndex else 0
-                    val shown = entries.filter { entry ->
-                        when (effectiveFilter) {
-                            0 -> true
-                            in 1..JournalCategories.size -> entry.category == JournalCategories[effectiveFilter - 1].key
-                            else -> entry.isAnswered
-                        }
-                    }
-                    if (shown.isEmpty()) {
-                        item(key = "journal_filtered_empty") {
-                            Text(
-                                language.pick("Nada en esta categoría todavía.", "Nothing in this category yet.", "Nada nesta categoria ainda."),
-                                style = styles.subhead,
-                                color = p.textSecondary,
-                                modifier = Modifier.padding(horizontal = design.spacing.gutter + 4.dp, vertical = 12.dp)
-                            )
-                        }
-                    }
-                    items(shown, key = { it.id }) { entry ->
-                        JournalEntryCard(
-                            entry = entry,
-                            language = language,
-                            onToggleAnswered = { onToggleAnswered(entry) },
-                            onDelete = { onRequestDelete(entry) },
-                            modifier = Modifier.padding(horizontal = design.spacing.gutter).padding(bottom = 12.dp)
-                        )
-                    }
-                }
-            }
+            if (showJournal) journalItems()
         }
 
         if (showJournal && !entries.isNullOrEmpty()) {
@@ -1051,134 +1127,182 @@ private fun QuizPage(
     val title = language.pick("Preguntas de fe", "Faith quiz", "Quiz da fé")
 
     val question = questions.getOrNull(index.coerceIn(0, (questions.size - 1).coerceAtLeast(0)))
+    val form = rememberLandscapeForm()
+    val landscape = form.isLandscape && form.heightDp < 500.dp
     // New question: back to the top. Answered: bring the verdict and the
     // button into view together with the options.
     LaunchedEffect(index) { listState.scrollToItem(0) }
     LaunchedEffect(hasAnswered) { if (hasAnswered) listState.animateScrollToItem(2) }
 
-    LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = dock + 24.dp)) {
-        item(key = "quiz_header") {
-            AppLargeTitleHeader(title = title) {
-                if (questions.isNotEmpty()) {
-                    Box(
-                        Modifier
-                            .lumenGlass(RoundedCornerShape(percent = 50), strong = true)
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                            .semantics { contentDescription = scoreText }
-                    ) {
-                        Text(scoreText, style = styles.caption, color = p.textPrimary)
-                    }
-                }
+    // Shared blocks so portrait and landscape cannot drift apart.
+    val scoreBadge: @Composable () -> Unit = {
+        if (questions.isNotEmpty()) {
+            Box(
+                Modifier
+                    .lumenGlass(RoundedCornerShape(percent = 50), strong = true)
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .semantics { contentDescription = scoreText }
+            ) {
+                Text(scoreText, style = styles.caption, color = p.textPrimary)
             }
         }
+    }
+    val emptyBody: @Composable () -> Unit = {
+        AppEmptyState(
+            title = language.pick("Sin preguntas", "No questions", "Sem perguntas"),
+            body = language.pick(
+                "El cuestionario no tiene preguntas disponibles.",
+                "The quiz has no questions available.",
+                "O questionário não tem perguntas disponíveis."
+            ),
+            icon = Icons.Outlined.Lightbulb
+        )
+    }
 
-        if (question == null) {
-            item(key = "quiz_empty") {
-                AppEmptyState(
-                    title = language.pick("Sin preguntas", "No questions", "Sem perguntas"),
-                    body = language.pick(
-                        "El cuestionario no tiene preguntas disponibles.",
-                        "The quiz has no questions available.",
-                        "O questionário não tem perguntas disponíveis."
-                    ),
-                    icon = Icons.Outlined.Lightbulb
-                )
+    if (question == null) {
+        if (landscape) {
+            Column(Modifier.fillMaxSize()) {
+                CompactHeader(title = title, form = form)
+                emptyBody()
             }
-            return@LazyColumn
-        }
-
-        item(key = "quiz_meta") {
-            val progressLabel = language.pick(
-                "Pregunta ${index + 1} de ${questions.size}",
-                "Question ${index + 1} of ${questions.size}",
-                "Pergunta ${index + 1} de ${questions.size}"
-            )
-            Column(Modifier.padding(horizontal = design.spacing.gutter)) {
-                Text(
-                    progressLabel + " · " + question.category.get(language),
-                    style = styles.footnote,
-                    color = p.textSecondary
-                )
-                Spacer(Modifier.height(10.dp))
-                Box(
-                    Modifier
-                        .semantics { stateDescription = progressLabel }
-                        .testTag("trivia_progress")
-                ) {
-                    AppProgressBar((index + 1).toFloat() / questions.size, height = 3.dp)
-                }
+        } else {
+            LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = dock + 24.dp)) {
+                item(key = "quiz_header") { AppLargeTitleHeader(title = title) { scoreBadge() } }
+                item(key = "quiz_empty") { emptyBody() }
             }
         }
+        return
+    }
 
-        item(key = "quiz_question") {
+    val progressLabel = language.pick(
+        "Pregunta ${index + 1} de ${questions.size}",
+        "Question ${index + 1} of ${questions.size}",
+        "Pergunta ${index + 1} de ${questions.size}"
+    )
+    val metaBlock: @Composable () -> Unit = {
+        Column(Modifier.padding(horizontal = design.spacing.gutter)) {
             Text(
-                question.question.get(language),
-                style = styles.title2,
-                color = p.textPrimary,
-                modifier = Modifier
-                    .padding(horizontal = design.spacing.gutter)
-                    .padding(top = 22.dp, bottom = 20.dp)
-                    .widthIn(max = design.spacing.readingMaxWidth)
+                progressLabel + " · " + question.category.get(language),
+                style = styles.footnote,
+                color = p.textSecondary
             )
-        }
-
-        item(key = "quiz_options") {
-            AppListGroup {
-                question.options.forEachIndexed { optionIndex, option ->
-                    val chosen = selectedOption == optionIndex
-                    val isCorrect = optionIndex == question.correctIndex
-                    // The verdict as text, not only as the mark: a wrong
-                    // choice is neither the selected row nor the right one.
-                    val stateLabel = when {
-                        !hasAnswered && chosen -> language.pick("Seleccionada", "Selected", "Selecionada")
-                        hasAnswered && isCorrect -> language.pick("Respuesta correcta", "Correct answer", "Resposta correta")
-                        hasAnswered && chosen -> language.pick("Respuesta incorrecta", "Incorrect answer", "Resposta incorreta")
-                        else -> null
-                    }
-                    val visual = when {
-                        !hasAnswered -> OptionVisual.Idle
-                        isCorrect -> OptionVisual.Correct
-                        chosen -> OptionVisual.Wrong
-                        else -> OptionVisual.Dimmed
-                    }
-                    QuizOptionRow(
-                        text = option.get(language),
-                        visual = visual,
-                        stateLabel = stateLabel,
-                        onClick = if (hasAnswered) null else ({ onAnswer(optionIndex) })
-                    )
-                }
+            Spacer(Modifier.height(10.dp))
+            Box(
+                Modifier
+                    .semantics { stateDescription = progressLabel }
+                    .testTag("trivia_progress")
+            ) {
+                AppProgressBar((index + 1).toFloat() / questions.size, height = 3.dp)
             }
         }
-
-        if (hasAnswered) {
-            val correct = selectedOption == question.correctIndex
-            item(key = "quiz_verdict") {
-                AppContentCard(
-                    title = if (correct) language.pick("Correcto", "Correct", "Correto")
-                    else language.pick("Doctrina católica", "Catholic doctrine", "Doutrina católica"),
-                    icon = if (correct) Icons.Outlined.CheckCircle else Icons.Outlined.MenuBook,
-                    modifier = Modifier
-                        .padding(horizontal = design.spacing.gutter)
-                        .padding(top = 20.dp)
-                ) {
-                    Text(
-                        question.doctrinalExplanation.get(language),
-                        style = styles.reading,
-                        color = p.textPrimary
-                    )
+    }
+    val questionBlock: @Composable () -> Unit = {
+        Text(
+            question.question.get(language),
+            style = styles.title2,
+            color = p.textPrimary,
+            modifier = Modifier
+                .padding(horizontal = design.spacing.gutter)
+                .padding(top = 22.dp, bottom = 20.dp)
+                .widthIn(max = design.spacing.readingMaxWidth)
+        )
+    }
+    val optionsBlock: @Composable () -> Unit = {
+        AppListGroup {
+            question.options.forEachIndexed { optionIndex, option ->
+                val chosen = selectedOption == optionIndex
+                val isCorrect = optionIndex == question.correctIndex
+                // The verdict as text, not only as the mark: a wrong
+                // choice is neither the selected row nor the right one.
+                val stateLabel = when {
+                    !hasAnswered && chosen -> language.pick("Seleccionada", "Selected", "Selecionada")
+                    hasAnswered && isCorrect -> language.pick("Respuesta correcta", "Correct answer", "Resposta correta")
+                    hasAnswered && chosen -> language.pick("Respuesta incorrecta", "Incorrect answer", "Resposta incorreta")
+                    else -> null
                 }
-            }
-            item(key = "quiz_next") {
-                AppPrimaryCapsule(
-                    label = language.pick("Siguiente pregunta", "Next question", "Próxima pergunta"),
-                    onClick = onNext,
-                    modifier = Modifier
-                        .padding(horizontal = design.spacing.gutter)
-                        .padding(top = 16.dp),
-                    tag = "next_trivia_question_button"
+                val visual = when {
+                    !hasAnswered -> OptionVisual.Idle
+                    isCorrect -> OptionVisual.Correct
+                    chosen -> OptionVisual.Wrong
+                    else -> OptionVisual.Dimmed
+                }
+                QuizOptionRow(
+                    text = option.get(language),
+                    visual = visual,
+                    stateLabel = stateLabel,
+                    onClick = if (hasAnswered) null else ({ onAnswer(optionIndex) })
                 )
             }
+        }
+    }
+    val verdictBlock: @Composable () -> Unit = {
+        val correct = selectedOption == question.correctIndex
+        AppContentCard(
+            title = if (correct) language.pick("Correcto", "Correct", "Correto")
+            else language.pick("Doctrina católica", "Catholic doctrine", "Doutrina católica"),
+            icon = if (correct) Icons.Outlined.CheckCircle else Icons.Outlined.MenuBook,
+            modifier = Modifier
+                .padding(horizontal = design.spacing.gutter)
+                .padding(top = 20.dp)
+        ) {
+            Text(
+                question.doctrinalExplanation.get(language),
+                style = styles.reading,
+                color = p.textPrimary
+            )
+        }
+    }
+    val nextBlock: @Composable () -> Unit = {
+        AppPrimaryCapsule(
+            label = language.pick("Siguiente pregunta", "Next question", "Próxima pergunta"),
+            onClick = onNext,
+            modifier = Modifier
+                .padding(horizontal = design.spacing.gutter)
+                .padding(top = 16.dp),
+            tag = "next_trivia_question_button"
+        )
+    }
+
+    // Landscape phone: score, progress and «Siguiente» stay visible in a fixed
+    // left pane; the question, its options and the verdict scroll on the right.
+    if (landscape) {
+        LandscapeTwoPane(
+            form = form,
+            leftWidthFraction = 0.34f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CompactHeader(title = title, form = form)
+                        scoreBadge()
+                        metaBlock()
+                        Spacer(Modifier.weight(1f))
+                        if (hasAnswered) nextBlock()
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(top = 8.dp, bottom = dock + 16.dp)
+                ) {
+                    item(key = "quiz_question") { questionBlock() }
+                    item(key = "quiz_options") { optionsBlock() }
+                    if (hasAnswered) item(key = "quiz_verdict") { verdictBlock() }
+                }
+            }
+        )
+        return
+    }
+
+    LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = dock + 24.dp)) {
+        item(key = "quiz_header") { AppLargeTitleHeader(title = title) { scoreBadge() } }
+        item(key = "quiz_meta") { metaBlock() }
+        item(key = "quiz_question") { questionBlock() }
+        item(key = "quiz_options") { optionsBlock() }
+        if (hasAnswered) {
+            item(key = "quiz_verdict") { verdictBlock() }
+            item(key = "quiz_next") { nextBlock() }
         }
     }
 }
@@ -1243,12 +1367,28 @@ private fun StationsPage(
 ) {
     val design = LocalAppDesign.current
     val p = design.palette
+    val styles = LocalAppTextStyles.current
     val dock = appDockInset()
     val hero = rememberFirstAsset("heroes/lumen/via_crucis.jpg", "heroes/lumen/christ_thorns.jpg", "heroes/lumen/spiritual.jpg")
     val label = language.pick("Vía Crucis", "Stations of the Cross", "Via-Sacra")
+    val form = rememberLandscapeForm()
     AppInlineTitle(label)
 
     if (stations.isEmpty()) {
+        if (form.isLandscape && form.heightDp < 500.dp) {
+            Column(Modifier.fillMaxSize()) {
+                CompactHeader(title = label, form = form)
+                AppEmptyState(
+                    title = language.pick("Sin estaciones", "No stations", "Sem estações"),
+                    body = language.pick(
+                        "El Vía Crucis no está disponible.",
+                        "The Stations of the Cross are not available.",
+                        "A Via-Sacra não está disponível."
+                    )
+                )
+            }
+            return
+        }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = dock + 24.dp)) {
             item {
                 AppDetailHeader(title = label, assetPath = hero, imageHeight = 180.dp)
@@ -1270,6 +1410,78 @@ private fun StationsPage(
     val pager = rememberPagerState { stations.size }
     val scope = rememberCoroutineScope()
     val current = pager.currentPage.coerceIn(stations.indices)
+
+    // Shared transport so portrait and landscape cannot drift apart.
+    val transport: @Composable () -> Unit = {
+        StationTransport(
+            isPlaying = isPlaying,
+            canPrevious = current > 0,
+            canNext = current < stations.size - 1,
+            onPrevious = { scope.launch { pager.animateScrollToPage(current - 1) } },
+            onNext = { scope.launch { pager.animateScrollToPage(current + 1) } },
+            onPlayPause = { onPlayPause(stations[current]) },
+            previousLabel = language.pick("Estación anterior", "Previous station", "Estação anterior"),
+            nextLabel = language.pick("Estación siguiente", "Next station", "Estação seguinte"),
+            playLabel = language.pick("Rezar estación", "Pray this station", "Rezar estação"),
+            stopLabel = language.pick("Detener", "Stop", "Parar")
+        )
+    }
+
+    // Landscape phone: the station's name, progress and transport stay visible
+    // in a fixed left pane; the reading (scripture, meditation, prayer) swipes
+    // station to station and scrolls on the right.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        val station = stations[current]
+        val progress = language.pick(
+            "Estación ${station.stationNumber} de ${stations.size}",
+            "Station ${station.stationNumber} of ${stations.size}",
+            "Estação ${station.stationNumber} de ${stations.size}"
+        )
+        val roman = language.pick(
+            "Estación ${TextFormat.roman(station.stationNumber)} de ${TextFormat.roman(stations.size)}",
+            "Station ${TextFormat.roman(station.stationNumber)} of ${TextFormat.roman(stations.size)}",
+            "Estação ${TextFormat.roman(station.stationNumber)} de ${TextFormat.roman(stations.size)}"
+        )
+        LandscapeTwoPane(
+            form = form,
+            leftWidthFraction = 0.36f,
+            left = {
+                PaneSurface {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CompactHeader(title = label, form = form)
+                        Text(
+                            stationDisplayTitle(station.title.get(language)),
+                            style = styles.title2,
+                            color = p.textPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(roman, style = styles.footnote, color = p.textSecondary)
+                        Box(Modifier.semantics { stateDescription = progress }) {
+                            AppProgressBar(station.stationNumber.toFloat() / stations.size, height = 3.dp)
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { transport() }
+                    }
+                }
+            },
+            right = {
+                HorizontalPager(
+                    state = pager,
+                    modifier = Modifier.fillMaxSize(),
+                    key = { stations[it].stationNumber }
+                ) { pageIndex ->
+                    LazyColumn(
+                        Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(top = 12.dp, bottom = dock + 16.dp)
+                    ) {
+                        item { StationReading(stations[pageIndex], stations.size, language, showProgress = false) }
+                    }
+                }
+            }
+        )
+        return
+    }
 
     Box(Modifier.fillMaxSize()) {
         HorizontalPager(
@@ -1294,30 +1506,23 @@ private fun StationsPage(
                 .padding(top = 36.dp, bottom = dock + 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            StationTransport(
-                isPlaying = isPlaying,
-                canPrevious = current > 0,
-                canNext = current < stations.size - 1,
-                onPrevious = { scope.launch { pager.animateScrollToPage(current - 1) } },
-                onNext = { scope.launch { pager.animateScrollToPage(current + 1) } },
-                onPlayPause = { onPlayPause(stations[current]) },
-                previousLabel = language.pick("Estación anterior", "Previous station", "Estação anterior"),
-                nextLabel = language.pick("Estación siguiente", "Next station", "Estação seguinte"),
-                playLabel = language.pick("Rezar estación", "Pray this station", "Rezar estação"),
-                stopLabel = language.pick("Detener", "Stop", "Parar")
-            )
+            transport()
         }
     }
 }
 
+/**
+ * The station's reading body: progress (when [showProgress]), scripture,
+ * meditation and the prayer card. Shared by the portrait page and the
+ * landscape reading pane.
+ */
 @Composable
-private fun StationPage(
+private fun StationReading(
     station: ViaCrucisStation,
     total: Int,
-    label: String,
-    hero: String?,
     language: AppLanguage,
-    bottomPadding: androidx.compose.ui.unit.Dp
+    showProgress: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val design = LocalAppDesign.current
     val p = design.palette
@@ -1332,6 +1537,49 @@ private fun StationPage(
         "Station ${TextFormat.roman(station.stationNumber)} of ${TextFormat.roman(total)}",
         "Estação ${TextFormat.roman(station.stationNumber)} de ${TextFormat.roman(total)}"
     )
+    Column(modifier.padding(horizontal = design.spacing.gutter)) {
+        if (showProgress) {
+            Text(roman, style = styles.footnote, color = p.textSecondary)
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.semantics { stateDescription = progress }) {
+                AppProgressBar(station.stationNumber.toFloat() / total, height = 2.dp)
+            }
+            Spacer(Modifier.height(design.spacing.sectionGap))
+        }
+        Column(
+            Modifier.widthIn(max = design.spacing.readingMaxWidth),
+            verticalArrangement = Arrangement.spacedBy(22.dp)
+        ) {
+            Text(
+                station.scripture.get(language),
+                style = styles.reading.copy(fontStyle = FontStyle.Italic),
+                color = p.textSecondary
+            )
+            Text(station.meditation.get(language), style = styles.reading, color = p.textPrimary)
+        }
+        Spacer(Modifier.height(design.spacing.sectionGap - 4.dp))
+        AppGlassSurface(
+            Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(design.spacing.cardPadding)
+        ) {
+            Column {
+                Text(language.pick("Oración", "Prayer", "Oração"), style = styles.eyebrow, color = p.textSecondary)
+                Spacer(Modifier.height(8.dp))
+                Text(station.prayer.get(language), style = styles.reading, color = p.textPrimary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StationPage(
+    station: ViaCrucisStation,
+    total: Int,
+    label: String,
+    hero: String?,
+    language: AppLanguage,
+    bottomPadding: androidx.compose.ui.unit.Dp
+) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding)) {
         item {
             AppDetailHeader(
@@ -1344,38 +1592,7 @@ private fun StationPage(
                 imageHeight = 200.dp
             )
         }
-        item {
-            Column(Modifier.padding(horizontal = design.spacing.gutter)) {
-                Text(roman, style = styles.footnote, color = p.textSecondary)
-                Spacer(Modifier.height(8.dp))
-                Box(Modifier.semantics { stateDescription = progress }) {
-                    AppProgressBar(station.stationNumber.toFloat() / total, height = 2.dp)
-                }
-                Spacer(Modifier.height(design.spacing.sectionGap))
-                Column(
-                    Modifier.widthIn(max = design.spacing.readingMaxWidth),
-                    verticalArrangement = Arrangement.spacedBy(22.dp)
-                ) {
-                    Text(
-                        station.scripture.get(language),
-                        style = styles.reading.copy(fontStyle = FontStyle.Italic),
-                        color = p.textSecondary
-                    )
-                    Text(station.meditation.get(language), style = styles.reading, color = p.textPrimary)
-                }
-                Spacer(Modifier.height(design.spacing.sectionGap - 4.dp))
-                AppGlassSurface(
-                    Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(design.spacing.cardPadding)
-                ) {
-                    Column {
-                        Text(language.pick("Oración", "Prayer", "Oração"), style = styles.eyebrow, color = p.textSecondary)
-                        Spacer(Modifier.height(8.dp))
-                        Text(station.prayer.get(language), style = styles.reading, color = p.textPrimary)
-                    }
-                }
-            }
-        }
+        item { StationReading(station, total, language, showProgress = true) }
     }
 }
 
@@ -1458,10 +1675,123 @@ private fun ChantPage(
     onTogglePlayback: (GregorianChantItem) -> Unit
 ) {
     val design = LocalAppDesign.current
+    val p = design.palette
+    val styles = LocalAppTextStyles.current
     val dock = appDockInset()
     val hero = rememberFirstAsset("heroes/lumen/chant.jpg", "heroes/lumen/spiritual.jpg")
     val title = language.pick("Canto gregoriano", "Gregorian chant", "Canto gregoriano")
+    val form = rememberLandscapeForm()
+    val countMeta = if (chants.isEmpty()) null else language.pick(
+        "${chants.size} ${if (chants.size == 1) "canto" else "cantos"}",
+        "${chants.size} ${if (chants.size == 1) "chant" else "chants"}",
+        "${chants.size} ${if (chants.size == 1) "canto" else "cantos"}"
+    )
     AppInlineTitle(title)
+
+    // Shared lyrics so portrait and landscape cannot drift apart.
+    val lyricsBlock: @Composable (GregorianChantItem) -> Unit = { chant ->
+        Column {
+            Text(language.pick("Latín", "Latin", "Latim"), style = styles.eyebrow, color = p.textSecondary)
+            Spacer(Modifier.height(6.dp))
+            Text(chant.latinLyrics, style = styles.reading, color = p.textPrimary)
+            Spacer(Modifier.height(18.dp))
+            Text(language.pick("Traducción", "Translation", "Tradução"), style = styles.eyebrow, color = p.textSecondary)
+            Spacer(Modifier.height(6.dp))
+            Text(chant.translatedLyrics.get(language), style = styles.reading, color = p.textSecondary)
+        }
+    }
+
+    // Landscape phone: master–detail. The repertoire index stays on the left;
+    // the selected chant's lyrics and translation read on the right with the
+    // only vertical scroll of the reading pane.
+    if (form.isLandscape && form.heightDp < 500.dp) {
+        if (chants.isEmpty()) {
+            Column(Modifier.fillMaxSize()) {
+                CompactHeader(title = title, form = form)
+                AppEmptyState(
+                    title = language.pick("Sin cantos", "No chants", "Sem cantos"),
+                    body = language.pick(
+                        "El repertorio no está disponible.",
+                        "The repertoire is not available.",
+                        "O repertório não está disponível."
+                    ),
+                    icon = Icons.Outlined.MusicNote
+                )
+            }
+            return
+        }
+        val selected = chants.firstOrNull { it.id == selectedChantId } ?: chants.first()
+        LandscapeTwoPane(
+            form = form,
+            leftWidthFraction = 0.38f,
+            left = {
+                PaneSurface(contentPadding = PaddingValues(0.dp)) {
+                    Column(Modifier.fillMaxSize()) {
+                        CompactHeader(title = title, form = form, subtitle = countMeta)
+                        LazyColumn(
+                            Modifier.fillMaxWidth().weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(chants, key = { it.id }) { chant ->
+                                val isSelected = chant.id == selected.id
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 52.dp)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(if (isSelected) p.selectionTint else Color.Transparent)
+                                        .clickable(role = Role.Button) { if (!isSelected) onSelect(chant) }
+                                        .semantics {
+                                            this.selected = isSelected
+                                            stateDescription = if (isSelected) language.pick("Seleccionado", "Selected", "Selecionado") else ""
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Outlined.MusicNote, null, tint = p.textPrimary, modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(10.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            chantDisplayTitle(chant.title),
+                                            style = styles.subhead,
+                                            color = p.textPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            chant.liturgicalSeason.get(language),
+                                            style = styles.footnote,
+                                            color = p.textSecondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            right = {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = dock + 16.dp)
+                ) {
+                    item(key = selected.id) {
+                        ChantReading(
+                            chant = selected,
+                            playing = selected.id == playingChantId,
+                            language = language,
+                            onTogglePlayback = { onTogglePlayback(selected) },
+                            lyricsBlock = lyricsBlock
+                        )
+                    }
+                }
+            }
+        )
+        return
+    }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -1472,11 +1802,7 @@ private fun ChantPage(
             AppDetailHeader(
                 title = title,
                 assetPath = hero,
-                meta = if (chants.isEmpty()) null else language.pick(
-                    "${chants.size} ${if (chants.size == 1) "canto" else "cantos"}",
-                    "${chants.size} ${if (chants.size == 1) "chant" else "chants"}",
-                    "${chants.size} ${if (chants.size == 1) "canto" else "cantos"}"
-                ),
+                meta = countMeta,
                 imageHeight = 180.dp
             )
         }
@@ -1501,10 +1827,56 @@ private fun ChantPage(
                     language = language,
                     onSelect = { onSelect(chant) },
                     onTogglePlayback = { onTogglePlayback(chant) },
+                    lyricsBlock = lyricsBlock,
                     modifier = Modifier.padding(horizontal = design.spacing.gutter)
                 )
             }
         }
+    }
+}
+
+/** The selected chant as a landscape reading page: heading, play, lyrics. */
+@Composable
+private fun ChantReading(
+    chant: GregorianChantItem,
+    playing: Boolean,
+    language: AppLanguage,
+    onTogglePlayback: () -> Unit,
+    lyricsBlock: @Composable (GregorianChantItem) -> Unit
+) {
+    val design = LocalAppDesign.current
+    val p = design.palette
+    val styles = LocalAppTextStyles.current
+    val name = chantDisplayTitle(chant.title)
+    Column(Modifier.widthIn(max = design.spacing.readingMaxWidth)) {
+        Text(name, style = styles.headline, color = p.textPrimary)
+        Spacer(Modifier.height(2.dp))
+        Text(chant.liturgicalSeason.get(language), style = styles.footnote, color = p.textSecondary)
+        Spacer(Modifier.height(12.dp))
+        Text(chant.description.get(language), style = styles.subhead, color = p.textSecondary)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            language.pick("Lectura de la letra latina con voz sintética; no es canto grabado.", "Latin lyrics read by a synthetic voice; this is not recorded singing.", "Leitura da letra latina com voz sintética; não é canto gravado."),
+            style = styles.footnote,
+            color = p.textSecondary
+        )
+        Spacer(Modifier.height(14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                language.pick("Letra y traducción", "Lyrics and translation", "Letra e tradução"),
+                style = styles.footnote.copy(fontWeight = FontWeight.Medium),
+                color = p.textPrimary,
+                modifier = Modifier.weight(1f)
+            )
+            AppRoundPlayButton(
+                playing = playing,
+                onClick = onTogglePlayback,
+                contentDescription = if (playing) language.pick("Detener", "Stop", "Parar")
+                else language.pick("Leer letra latina de $name · voz sintética", "Read Latin lyrics of $name · synthetic voice", "Ler letra latina de $name · voz sintética")
+            )
+        }
+        Spacer(Modifier.height(16.dp))
+        lyricsBlock(chant)
     }
 }
 
@@ -1516,6 +1888,7 @@ private fun ChantCard(
     language: AppLanguage,
     onSelect: () -> Unit,
     onTogglePlayback: () -> Unit,
+    lyricsBlock: @Composable (GregorianChantItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val design = LocalAppDesign.current
@@ -1573,15 +1946,7 @@ private fun ChantCard(
                 enter = expandVertically(tween(design.motion.mediumMillis)) + fadeIn(tween(design.motion.mediumMillis)),
                 exit = shrinkVertically(tween(design.motion.fastMillis)) + fadeOut(tween(design.motion.fastMillis))
             ) {
-                Column(Modifier.padding(top = 16.dp)) {
-                    Text(language.pick("Latín", "Latin", "Latim"), style = styles.eyebrow, color = p.textSecondary)
-                    Spacer(Modifier.height(6.dp))
-                    Text(chant.latinLyrics, style = styles.reading, color = p.textPrimary)
-                    Spacer(Modifier.height(18.dp))
-                    Text(language.pick("Traducción", "Translation", "Tradução"), style = styles.eyebrow, color = p.textSecondary)
-                    Spacer(Modifier.height(6.dp))
-                    Text(chant.translatedLyrics.get(language), style = styles.reading, color = p.textSecondary)
-                }
+                Column(Modifier.padding(top = 16.dp)) { lyricsBlock(chant) }
             }
         }
     }

@@ -711,7 +711,7 @@ fun HomeScreen(
     } else {
     LazyColumn(
         state = listState,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             // The hero still reaches the top edge; scroll-to and keyboard
             // focus stop above the floating dock, where actions can be tapped.
