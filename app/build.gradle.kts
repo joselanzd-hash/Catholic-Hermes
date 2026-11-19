@@ -50,6 +50,17 @@ android {
       // AI Studio.
       signingConfig = signingConfigs.getByName("debugConfig")
     }
+    // Side-by-side build for reviewing the landscape redesign. A different
+    // applicationId means Android treats it as a separate app, so it installs
+    // next to the Play Store build instead of failing with a signature clash
+    // ("App no instalada"). Its own label comes from src/landscape/res.
+    create("landscape") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".ls"
+      versionNameSuffix = "-ls"
+      signingConfig = signingConfigs.getByName("debugConfig")
+      matchingFallbacks += listOf("debug")
+    }
   }
   compileOptions {
     isCoreLibraryDesugaringEnabled = true

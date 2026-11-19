@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Etiqueta propia del build side-by-side del rediseno landscape.
+     Sobrescribe la de main solo en la variante `landscape`, para que las dos
+     apps se distingan en el cajon de aplicaciones. -->
+<resources>
+    <string name="app_name">Sancta Fides LS</string>
+</resources>
