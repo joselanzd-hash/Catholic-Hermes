@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
-<title>Orar &middot; landscape v1</title>
+<title>Orar &middot; landscape v2</title>
 <link rel="stylesheet" href="lumen.css">
 <style>
 .phone { background: var(--canvas); }
@@ -36,6 +36,28 @@
 .hair { height: 1px; background: var(--hairline); margin: 0 14px; }
 .phone.w740 .reading { font-size: 18px; }
 .phone.w740 .surface h2 { font-size: 20px; }
+
+.states { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; }
+.state-box { width: 460px; }
+.state-cap { color: #E8EAF2; font-size: 12px; font-weight: 600; margin: 0 0 6px 2px;
+             letter-spacing: .04em; text-transform: uppercase; }
+.state-phone { width: 460px; height: 230px; }
+.state-phone .pane-body { overflow: hidden; padding: 12px 16px 16px; }
+.err { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+       border-radius: var(--r-group); background: var(--grouped); border: 1px solid var(--hairline); }
+.err .ico { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%;
+            background: color-mix(in srgb, var(--gold) 18%, transparent); color: var(--gold);
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 700; }
+.err .ico.ok { background: var(--accent-muted); color: var(--accent); }
+.btn { min-height: 46px; display: inline-flex; align-items: center; justify-content: center;
+       padding: 0 20px; border-radius: 999px; border: 0; background: var(--accent);
+       color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+[data-theme="dark"] .btn { color: #0A0E1C; }
+.btn.ghost { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+.skel { height: 12px; border-radius: 6px; background: var(--sel, #E6EAF4); margin-bottom: 10px; }
+.skel.w60 { width: 60%; } .skel.w85 { width: 85%; } .skel.w40 { width: 40%; }
+.skel.bar { height: 44px; border-radius: 999px; margin-top: 6px; }
 </style>
 </head><body>
 <div class="phone w844" data-theme="light">
@@ -163,6 +185,59 @@
           <div class="note"><div class="meta">NOTA DEL TEXTO</div><div class="nt">Texto litúrgico de dominio público.</div></div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="states">
+  <div class="state-box">
+    <p class="state-cap">Oraci&oacute;n larga &middot; la Salve, scroll de lectura</p>
+    <div class="phone state-phone" data-theme="light">
+      <div class="frame"><div class="pane read" style="flex:1">
+        <div class="pane-body">
+          <div class="reading"><p>Dios te salve, Reina y Madre de misericordia, vida, dulzura y esperanza nuestra, Dios te salve. A ti clamamos los desterrados hijos de Eva; a ti suspiramos, gimiendo y llorando en este valle de l&aacute;grimas.</p></div>
+          <div class="meta" style="margin-top:8px">El panel izquierdo no se mueve: el arte, el t&iacute;tulo y los controles siguen fijos mientras se lee.</div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+  <div class="state-box">
+    <p class="state-cap">Audio activo &middot; pausa, no play</p>
+    <div class="phone state-phone" data-theme="dark">
+      <div class="frame"><div class="pane read" style="flex:1">
+        <div class="pane-body">
+          <div class="reading"><p>Gloria al Padre, y al Hijo, y al Esp&iacute;ritu Santo.</p></div>
+          <div class="err" style="margin-top:12px"><span class="ico ok">&#10073;&#10073;</span>
+            <span class="meta" style="flex:1">Leyendo en voz alta</span>
+            <button class="btn ghost" style="min-height:44px">Detener</button></div>
+          <div class="meta" style="margin-top:10px">El disco de Escuchar del panel izquierdo pasa a pausa y a accentMuted.</div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+  <div class="state-box">
+    <p class="state-cap">Carga &middot; espeja la estructura real</p>
+    <div class="phone state-phone" data-theme="light">
+      <div class="frame"><div class="pane read" style="flex:1">
+        <div class="pane-body">
+          <div class="skel w40"></div><div class="skel w85"></div><div class="skel"></div><div class="skel w60"></div>
+          <div class="skel bar"></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+  <div class="state-box">
+    <p class="state-cap">Error &middot; gold, con recuperaci&oacute;n</p>
+    <div class="phone state-phone" data-theme="light">
+      <div class="frame"><div class="pane read" style="flex:1">
+        <div class="pane-body">
+          <div class="err"><span class="ico">!</span>
+            <span class="meta" style="flex:1">No se pudo cargar el texto de esta oraci&oacute;n.</span></div>
+          <button class="btn" style="margin-top:12px;width:100%">Reintentar</button>
+          <div class="meta" style="margin-top:10px">El resto de la ficha (historia, fuente) sigue disponible si ya estaba guardada.</div>
+        </div>
+      </div></div>
     </div>
   </div>
 </div>
