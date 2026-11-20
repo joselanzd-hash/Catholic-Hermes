@@ -82,13 +82,13 @@
   },
   {
    "id": "virgen_banneux",
-   "title": "File:Banneux Maagd der armen.jpg",
-   "author": "Johfrael",
+   "title": "File:Ryckevelde Madonna Banneux.jpg",
+   "author": "Zeisterre",
    "license": "CC BY-SA 3.0",
    "source": "Wikimedia Commons",
-   "url": "https://commons.wikimedia.org/wiki/File:Banneux_Maagd_der_armen.jpg",
-   "referential": false,
-   "note": "La estatua y la fuente de la Virgen de los Pobres en Banneux."
+   "url": "https://commons.wikimedia.org/wiki/File:Ryckevelde_Madonna_Banneux.jpg",
+   "referential": true,
+   "note": "Estatua de Ntra. Sra. de Banneux en Ryckevelde (Bélgica); no la del santuario, que quedó lejana tras la fuente."
   },
   {
    "id": "virgen_la_salette",
@@ -112,13 +112,13 @@
   },
   {
    "id": "virgen_suyapa",
-   "title": "File:Virgen de Suyapa.jpg",
-   "author": "Josue Ochoa 2002",
+   "title": "File:Nuestra Sra de Pompeya 20180129 fRF58.1 -Virgen de Suyapa.jpg",
+   "author": "Rodrigo Fernández",
    "license": "CC BY-SA 4.0",
    "source": "Wikimedia Commons",
-   "url": "https://commons.wikimedia.org/wiki/File:Virgen_de_Suyapa.jpg",
-   "referential": false,
-   "note": "La imagen de la Virgen de Suyapa en su basílica de Tegucigalpa."
+   "url": "https://commons.wikimedia.org/wiki/File:Nuestra_Sra_de_Pompeya_20180129_fRF58.1_-Virgen_de_Suyapa.jpg",
+   "referential": true,
+   "note": "Primer plano de la imagen en la sacristía de Ntra. Sra. de Pompeya (Buenos Aires); en la basílica de Tegucigalpa quedaba diminuta al fondo."
   },
   {
    "id": "virgen_desamparados_valencia",
@@ -169,6 +169,46 @@
    "url": "https://commons.wikimedia.org/wiki/File:03178ajfStatues_of_Mary_Untier_of_Knots_in_the_Philippinesfvf.jpg",
    "referential": true,
    "note": "Estatua de María Desatadora de los Nudos en Filipinas; el original es el cuadro de San Pedro am Perlach, Augsburgo."
+  },
+  {
+   "id": "virgen_loreto",
+   "title": "File:Trento, santuario delle Laste - Affresco Madonna di Loreto.jpg",
+   "author": "Syrio",
+   "license": "CC BY-SA 4.0",
+   "source": "Wikimedia Commons",
+   "url": "https://commons.wikimedia.org/wiki/File:Trento,_santuario_delle_Laste_-_Affresco_Madonna_di_Loreto.jpg",
+   "referential": false,
+   "note": "Fresco de la Madonna di Loreto en el santuario delle Laste (Trento). Sustituye a la pintura de la Translacion de la Santa Casa, donde la Virgen era figura secundaria."
+  },
+  {
+   "id": "virgen_del_quinche",
+   "title": "File:Virgen del Quinche Quisapincha.jpg",
+   "author": "Corp Solidaria Quisapincha",
+   "license": "CC BY-SA 3.0",
+   "source": "Wikimedia Commons",
+   "url": "https://commons.wikimedia.org/wiki/File:Virgen_del_Quinche_Quisapincha.jpg",
+   "referential": true,
+   "note": "Copia venerada en Quisapincha (Ambato), aceptada por el coordinador como referencial."
+  },
+  {
+   "id": "virgen_montserrat",
+   "title": "File:Santa maria di Montserrat, interno, cappella della madre di dio, madonna nera col bambino del xii secolo, 01.jpg",
+   "author": "Francesco Bini",
+   "license": "CC BY-SA 4.0",
+   "source": "Wikimedia Commons",
+   "url": "https://commons.wikimedia.org/wiki/File:Santa_maria_di_Montserrat,_interno,_cappella_della_madre_di_dio,_madonna_nera_col_bambino_del_xii_secolo,_01.jpg",
+   "referential": false,
+   "note": "La Moreneta, Virgen del s. XII, en la capilla de la basílica de Montserrat."
+  },
+  {
+   "id": "virgen_beauraing",
+   "title": "File:Notre Dame de Beauraing-006.jpg",
+   "author": "FredSeiller",
+   "license": "CC0",
+   "source": "Wikimedia Commons",
+   "url": "https://commons.wikimedia.org/wiki/File:Notre_Dame_de_Beauraing-006.jpg",
+   "referential": false,
+   "note": "Estatua de Ntra. Sra. de Beauraing en la capilla votiva del santuario: representa la aparición."
   }
  ]
 }

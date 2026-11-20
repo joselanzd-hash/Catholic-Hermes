@@ -4,6 +4,8 @@
 **Origen:** `docs/tasks/T-044-data/devotions.tsv` (25 devociones, id + nombre + lugar)
 **Estado:** EN CURSO — **no dar por terminado**
 
+Revisión (1) del coordinador: **APROBADO PARCIAL**. Se integran 15 de las 17 del primer lote. Excluidas `virgen_banneux` y `virgen_suyapa` (la imagen venerada no se distinguía); el Rocío pasa a **referencial** por ser réplica de porcelana. Pendiente: las 2 exclusiones y las 6 del lote 2.
+
 ## Reglas aplicadas
 
 1. **La imagen tiene que ser de esa advocación concreta.** No valen fachadas, procesiones lejanas,
@@ -23,8 +25,9 @@
 | | |
 |---|---|
 | Devociones en el TSV | 25 |
-| Con imagen descargada | **17** |
-| Sin imagen (a día de hoy) | 8 |
+| Con imagen descargada (lote 1) | 17 |
+| Integradas por el coordinador | 15 |
+| Lote 2 en curso | 8 (2 sustituciones + 6 pendientes) |
 
 ### Con imagen (17)
 
