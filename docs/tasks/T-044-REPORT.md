@@ -25,9 +25,9 @@ Revisión (1) del coordinador: **APROBADO PARCIAL**. Se integran 15 de las 17 de
 | | |
 |---|---|
 | Devociones en el TSV | 25 |
-| Con imagen descargada (lote 1) | 17 |
-| Integradas por el coordinador | 15 |
-| Lote 2 en curso | 8 (2 sustituciones + 6 pendientes) |
+| Con imagen descargada | **23** |
+| Integradas por el coordinador (lote 1) | 15 |
+| Sin imagen | **2** (`maria_auxiliadora`, `virgen_paz_el_salvador`) |
 
 ### Con imagen (17)
 
@@ -51,16 +51,12 @@ Revisión (1) del coordinador: **APROBADO PARCIAL**. Se integran 15 de las 17 de
 | `nossa_senhora_nazare_belem` | `Imagem de Nossa Senhora de Nazaré em Paragominas-Pará.jpg` | CC BY 4.0 | **REFERENCIAL**: estatua del Cirio en Paragominas, no la de la basílica de Belém |
 | `maria_desatadora_nudos` | `03178ajfStatues of Mary Untier of Knots in the Philippinesfvf.jpg` | CC0 | **REFERENCIAL**: estatua en Filipinas; el original es el cuadro de Augsburgo |
 
-### Sin imagen (8)
+### Sin imagen (2)
 
 | id | Motivo |
 |---|---|
-| `virgen_del_quinche` | El candidato era una copia en Quisapincha (Ambato); elegible como **referencial**, pendiente de decisión. No descargada. |
-| `virgen_montserrat` | Los candidatos eran la Moreneta (baja resolución o con velos) o retablos; la descarga falló con 429. |
-| `virgen_loreto` | `Our Lady of Loreto.jpg` no descargada (429). |
-| `virgen_walsingham` | Icono contemporáneo de Olga Shalamova; no descargada (404 en la vía alternativa). |
-| `virgen_beauraing` | La búsqueda devuelve multitudes y peregrinos (Agence Rol); la estatua del «Corazón de Oro» no localizada. |
-| `nossa_senhora_nazare_portugal` | La búsqueda devuelve el núcleo de Nazaré y el «veado surfista»; la imagen venerada no localizada. |
+
+
 | `maria_auxiliadora` | Solo fachadas, capillas y personas; no una imagen de la Virgen. |
 | `virgen_paz_el_salvador` | Solo iglesias tituladas «Our Lady Queen of Peace» en otros países; la de San Miguel no localizada. |
 
