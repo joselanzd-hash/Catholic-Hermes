@@ -153,6 +153,13 @@
 
 ## Tests
 
+- **Base de la pasada final:** 1.9.5 (código 45), con las 55 coronillas corregidas y el fix del force close del rosario.
+- **Pasada r2 sobre 1.9.5, con timeout por clase:**
+  - `SaintsScreenTest`: **verde** en 1.9.4 (28m06s); no se repitió en 1.9.5 (solo cambiaron datos de coronillas y este test no los toca).
+  - `*LandscapeL5Test`: **13/13 verdes** en 1.9.5 (4m52s).
+  - `SearchUiTest`: **8 tests, 1 fallo** (`coursesPlansCatechismAndSectionsOpenTheirScreens`, `ComposeTimeoutException` en `waitForGroup(search_group_catechism)`). Se probaron tres correcciones en `SearchScreen` (publicación única, reinicio de scroll, items separados y nodo semántico) sin éxito; se revirtieron para no dejar cambios especulativos. Queda pendiente.
+  - `TabletLayoutTest`: se colgó; cortado por `timeout 50m` (EXIT=124), sin aserciones fallidas. Queda pendiente.
+  - `NarrowLargeTextAuditTest`: se colgó; antes del timeout (EXIT=124) falló `[APPLE ES] nothingIsClippedOrUnreachableAt320dpWith130PercentText` en `NarrowLargeTextAuditTest.kt:541`. No se escribió el TSV de hallazgos. Queda pendiente.
 - **Pasada final conjunta:** `./gradlew :app:testDebugUnitTest --tests '*LandscapeL5Test' :app:assembleDebug --max-workers=4` → `BUILD SUCCESSFUL in 5m 11s`; **13 tests, 0 fallos** (7 clases). APK `app/build/outputs/apk/debug/app-debug.apk` (113 MB, 2026-11-23 22:32).
 - `SearchLandscapeL5Test` (nuevo): **1/1 test, 0 fallos** en 2m07s.
 - `PlansLandscapeL5Test` (nuevo): **2/2 tests, 0 fallos** en 2m10s.
