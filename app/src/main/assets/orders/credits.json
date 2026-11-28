@@ -232,13 +232,13 @@
     },
     {
       "id": "hermanitas-pobres-psdp",
-      "title": "hermanitas-pobres-psdp",
-      "author": "Hermanitas de los Pobres",
-      "license": "Derechos: Hermanitas de los Pobres",
-      "source": "Sitio oficial (littlesistersofthepoor.org)",
-      "url": "https://littlesistersofthepoor.org/",
+      "title": "pspd-logo-updated.webp",
+      "author": "",
+      "license": "Derechos: Petites Sœurs des Pauvres",
+      "source": "Sitio oficial (petitessoeursdespauvres.org)",
+      "url": "https://petitessoeursdespauvres.org/wp-content/uploads/2025/11/pspd-logo-updated.webp",
       "referential": false,
-      "note": "Logo oficial de las Hermanitas de los Pobres: dos manos y una paloma dentro de una casa."
+      "note": "Símbolo naranja recortado del logotipo oficial (recorte 260x290 px, >=200 px); se conserva sin el texto."
     },
     {
       "id": "hermanos-cristianos-cfc",
@@ -262,13 +262,13 @@
     },
     {
       "id": "hijas-san-pablo-fsp",
-      "title": "hijas-san-pablo-fsp",
-      "author": "Hijas de San Pablo",
-      "license": "Derechos: Hijas de San Pablo",
+      "title": "EN-Logo-2.png",
+      "author": "",
+      "license": "Derechos: Figlie di San Paolo",
       "source": "Sitio oficial (paoline.org)",
-      "url": "https://www.paoline.org/",
+      "url": "https://www.paoline.org/wp-content/uploads/2024/03/EN-Logo-2.png",
       "referential": false,
-      "note": "Logotipo institucional de las Hijas de San Pablo (FSP) en su web generalizia."
+      "note": "Símbolo azul del libro y la órbita recortado del logotipo oficial (recorte 400x360 px, >=200 px); se conserva sin el texto."
     },
     {
       "id": "hospitalarios-san-juan-dios-oh",
@@ -482,13 +482,13 @@
     },
     {
       "id": "rogacionistas-rcj",
-      "title": "rogacionistas-rcj",
-      "author": "Rogacionistas del Corazón de Jesús",
-      "license": "Derechos: Rogacionistas del Corazón de Jesús",
+      "title": "Logo_Rogazionista2023_Senza_nome.png",
+      "author": "",
+      "license": "Derechos: Congregazione dei Padri Rogazionisti del Cuore di Gesù",
       "source": "Sitio oficial (rcj.org)",
-      "url": "https://www.rcj.org/",
+      "url": "https://www.rcj.org/download/baixar/logo-rcj/spagnolo/",
       "referential": false,
-      "note": "Logo de la Congregación de los Padres Rogacionistas del Corazón de Jesús (R.C.J.)."
+      "note": "Versión \"Senza nome\" (solo símbolo) del paquete oficial de logo RCJ 2023; reducida a 256 px."
     },
     {
       "id": "sacramentinos-sss",
@@ -512,13 +512,13 @@
     },
     {
       "id": "san-jose-cluny-sjc",
-      "title": "san-jose-cluny-sjc",
-      "author": "Hermanas de San José de Cluny",
-      "license": "Derechos: Hermanas de San José de Cluny",
+      "title": "coeur.svg",
+      "author": "",
+      "license": "Derechos: Sœurs de Saint Joseph de Cluny",
       "source": "Sitio oficial (sj-cluny.org)",
-      "url": "https://www.sj-cluny.org/",
+      "url": "https://www.sj-cluny.org/wp-content/uploads/2025/05/coeur.svg",
       "referential": false,
-      "note": "Logotipo oficial de las Hermanas de San José de Cluny (S.J.C.)."
+      "note": "Corazón vectorial del sitio oficial, rasterizado a PNG 256 px; sin las letras SJC."
     },
     {
       "id": "servitas-osm",

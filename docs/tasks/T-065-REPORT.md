@@ -20,9 +20,22 @@ No se han tocado los otros 50 `weekdays`. En particular:
 
 **Validador:** `python docs/tasks/tools/validate_chaplets.py --images app/src/main/assets/chaplets/*.json` → **55 files · 0 errors · 1 warnings** (la advertencia conocida de `coronilla-difuntos-45`, explicada en sus `notes`).
 
-## Parte B
+## Parte B · Cuatro emblemas solo símbolo
 
-Pendiente: buscar las versiones solo símbolo de los cuatro emblemas y actualizar `orders/credits.json`.
+Se sustituyeron los cuatro PNG por versiones sin texto legible a 44 dp. Los cuatro miden 256×256 px y conservan transparencia.
+
+| Emblema | Solución | Origen | Derechos |
+|---|---|---|---|
+| `hermanitas-pobres-psdp` | Recorte del símbolo naranja del logotipo oficial (260×290 px antes de reducir) | Web oficial de las Petites Sœurs des Pauvres[6] | Derechos: Petites Sœurs des Pauvres |
+| `hijas-san-pablo-fsp` | Recorte del libro con órbita del logotipo oficial (400×360 px antes de reducir) | Web oficial de las Figlie di San Paolo[7] | Derechos: Figlie di San Paolo |
+| `rogacionistas-rcj` | Archivo `Logo_Rogazionista2023_Senza_nome.png` del paquete oficial de logo RCJ | Web oficial de los Rogacionistas[8] | Derechos: Congregazione dei Padri Rogazionisti del Cuore di Gesù |
+| `san-jose-cluny-sjc` | Corazón vectorial oficial rasterizado, sin las letras SJC | Web oficial de las Sœurs de Saint Joseph de Cluny[9] | Derechos: Sœurs de Saint Joseph de Cluny |
+
+La lámina de verificación quedó en `docs/tasks/T-065-data/emblemas-lamina.png`. Se actualizaron las cuatro entradas de `app/src/main/assets/orders/credits.json` con `source`, `url`, `license` y la nota exacta de recorte o rasterizado.
+
+No se encontró una versión «solo símbolo» publicada para las Hermanitas de los Pobres ni para las Hijas de San Pablo, así que se aplicó la regla del encargo: recortar el símbolo del logotipo oficial con más de 200 px por lado. Los Rogacionistas sí publican una variante `Senza nome` en su paquete oficial; las Cluny publican el corazón como SVG independiente.
+
+No se han tocado Kotlin, `ui/`, versiones, firma, Room, contenido ni `dist/`.
 
 ## Sources
 
@@ -31,3 +44,7 @@ Pendiente: buscar las versiones solo símbolo de los cuatro emblemas y actualiza
 [3] https://www.piercedhearts.org/treasures/devotions/to_saints/prayers_saintjoseph.htm — Pierced Hearts · St Joseph devotion
 [4] https://iveinarabic.org/es/rosarios-y-coronas — IVE · Rosarios y coronas
 [5] https://santaritalondrina.com.br/p/terco-de-santa-rita-de-cassia — Santuário Santa Rita · Terço
+[6] https://petitessoeursdespauvres.org/wp-content/uploads/2025/11/pspd-logo-updated.webp — Petites Sœurs des Pauvres · logo oficial
+[7] https://www.paoline.org/wp-content/uploads/2024/03/EN-Logo-2.png — Daughters of St Paul · logo oficial
+[8] https://www.rcj.org/download/baixar/logo-rcj/spagnolo — Rogacionistas RCJ · descarga oficial del logo
+[9] https://www.sj-cluny.org/wp-content/uploads/2025/05/coeur.svg — Sisters of St Joseph of Cluny · corazón oficial
